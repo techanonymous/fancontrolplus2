@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Maintainer>
-  <Icon>https://raw.githubusercontent.com/ck9393/fanctrlplus/main/images/fanctrlplus.png</Icon>
+  <Icon>https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/images/fancontrolplus2.png</Icon>
   <Profile>
-    FanCtrl Plus author. Personal project for Unraid, developed from real-world needs.
+    FanControl Plus 2 maintainer. A fork of FanCtrl Plus by ck9393, extended with IPMI sensor support.
   </Profile>
-  <Forum>https://forums.unraid.net/topic/191722-plugin-fancrtl-plus/</Forum>
+  <Forum>https://github.com/techanonymous/fancontrolplus2</Forum>
   <DonateLink>https://www.paypal.com/paypalme/cck9393</DonateLink>
-  <DonateText>If you like my work, please consider donating!</DonateText>
+  <DonateText>This is a fork — donations go to ck9393, the original author of FanCtrl Plus.</DonateText>
 </Maintainer>

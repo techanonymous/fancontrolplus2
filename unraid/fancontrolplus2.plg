@@ -1,19 +1,19 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
-<!ENTITY name "fanctrlplus">
+<!ENTITY name "fancontrolplus2">
 <!ENTITY version "1.3.3">
-<!ENTITY author "ck9393">
-<!ENTITY launch "Settings/fanctrlplus">
-<!ENTITY pluginURL "https://raw.githubusercontent.com/ck9393/fanctrlplus/main/unraid/&name;.plg">
+<!ENTITY author "techanonymous">
+<!ENTITY launch "Settings/fancontrolplus2">
+<!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
 <!ENTITY source "/boot/config/plugins/&name;">
-<!ENTITY txz "/boot/config/plugins/fanctrlplus/fanctrlplus-&version;.txz">
+<!ENTITY txz "/boot/config/plugins/fancontrolplus2/fancontrolplus2-&version;.txz">
 <!ENTITY MD5 "28e2fb69f64aa5db6119e7173e56a7da">
 ]>
 
-<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.0" support="https://forums.unraid.net/topic/191722-plugin-fancrtl-plus">
+<PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.0" support="https://github.com/techanonymous/fancontrolplus2/issues">
 
 <ICON>
-/usr/local/emhttp/plugins/fanctrlplus/images/fanctrlplus.png
+/usr/local/emhttp/plugins/fancontrolplus2/images/fancontrolplus2.png
 </ICON>
 
 <CHANGES>
@@ -28,7 +28,7 @@
 - Adapted for Unraid 7.2.0-beta3 responsive UI and dashboard tile
 - Added automatic recovery logic for changed hwmon paths
 - Added new Identify Mode options: Pause (30s), Max Speed (30s), Pulse (40s)
-- FanCtrl Plus dashboard tile now shows RPM / PWM%
+- FanControl Plus 2 dashboard tile now shows RPM / PWM%
 - Added new FCP Airflow dashboard tile
 - Added FCP Airflow toggle in Identify PWM Controller section (default: Disabled)
 
@@ -86,7 +86,7 @@
 - Minor UI alignment and layout improvements.
 
 ###1.2.1
-- fanctrlplus v1.2.1 introduces small but useful improvements. The "Pause 30s" button now shows a proper countdown and restores automatically after 30 seconds, improving user feedback. Additionally, disks in the dropdown list are now sorted more intuitively, with "Parity" and "Parity 2" correctly shown before "Disk 1", "Disk 2", etc.    
+- fancontrolplus2 v1.2.1 introduces small but useful improvements. The "Pause 30s" button now shows a proper countdown and restores automatically after 30 seconds, improving user feedback. Additionally, disks in the dropdown list are now sorted more intuitively, with "Parity" and "Parity 2" correctly shown before "Disk 1", "Disk 2", etc.    
 - This version mainly improves UI clarity and minor fan control behavior.
 
 ###1.2.0
@@ -122,7 +122,7 @@
 - Relocated status text to appear under the page title
 
 ###1.0.2
-- Replaced new rc.fanctrlplus
+- Replaced new rc.fancontrolplus2
 
 ###1.0.1
 - New icon with transparent background
@@ -152,37 +152,37 @@ fi
 
 <!-- 下载并安装新的 .txz -->
 <FILE Name="&txz;" Run="upgradepkg --install-new --reinstall">
-<URL>https://github.com/ck9393/fanctrlplus/releases/download/v&version;/&name;-&version;.txz</URL>
+<URL>https://github.com/techanonymous/fancontrolplus2/releases/download/v&version;/&name;-&version;.txz</URL>
 <MD5>&MD5;</MD5>
 </FILE>
 
-<!-- 启动 array monitor 守护脚本，并注册 rc.fanctrlplus -->
+<!-- 启动 array monitor 守护脚本，并注册 rc.fancontrolplus2 -->
 <FILE Run="/bin/bash">
 <INLINE>
 <![CDATA[
 #!/bin/bash
 
-# 注册 rc.fanctrlplus 到 /etc/rc.d
-src="/usr/local/emhttp/plugins/fanctrlplus/scripts/rc.fanctrlplus"
-dst="/etc/rc.d/rc.fanctrlplus"
+# 注册 rc.fancontrolplus2 到 /etc/rc.d
+src="/usr/local/emhttp/plugins/fancontrolplus2/scripts/rc.fancontrolplus2"
+dst="/etc/rc.d/rc.fancontrolplus2"
 if [ -f "$src" ]; then
 ln -sf "$src" "$dst"
 fi
 
 # 清理旧缓存，避免残留数据导致 tile 不更新
-mkdir -p /var/tmp/fanctrlplus
-rm -f /var/tmp/fanctrlplus/*
+mkdir -p /var/tmp/fancontrolplus2
+rm -f /var/tmp/fancontrolplus2/*
 
 # 杀掉旧的 array_monitor 实例
-pkill -f "/usr/local/emhttp/plugins/fanctrlplus/scripts/array_monitor.sh"
+pkill -f "/usr/local/emhttp/plugins/fancontrolplus2/scripts/array_monitor.sh"
 
-# 强制重启 fanctrlplus 主守护
+# 强制重启 fancontrolplus2 主守护
 if [ -x "$dst" ]; then
   "$dst" restart
 fi
 
 # 启动新的 array_monitor 守护脚本
-script="/usr/local/emhttp/plugins/fanctrlplus/scripts/array_monitor.sh"
+script="/usr/local/emhttp/plugins/fancontrolplus2/scripts/array_monitor.sh"
 if [ -x "$script" ]; then
 nohup "$script" >/dev/null 2>&1 &
 fi
@@ -204,17 +204,17 @@ exit 0
 <INLINE>
 #!/bin/bash
 
-# 停止 fanctrlplus 服务
-/usr/local/emhttp/plugins/fanctrlplus/scripts/rc.fanctrlplus stop 2>/dev/null
+# 停止 fancontrolplus2 服务
+/usr/local/emhttp/plugins/fancontrolplus2/scripts/rc.fancontrolplus2 stop 2>/dev/null
 pkill -f array_monitor.sh
 
 # 删除插件目录和注册文件
-rm -rf /usr/local/emhttp/plugins/fanctrlplus
-rm -rf /boot/config/plugins/fanctrlplus
-rm -f /etc/rc.d/rc.fanctrlplus
+rm -rf /usr/local/emhttp/plugins/fancontrolplus2
+rm -rf /boot/config/plugins/fancontrolplus2
+rm -f /etc/rc.d/rc.fancontrolplus2
 
 echo "============================================================"
-echo "    FanCtrl Plus has been removed."
+echo "    FanControl Plus 2 has been removed."
 echo "    To ensure fan control is restored to BIOS or other tools,"
 echo "    it is strongly recommended to reboot your Unraid server."
 echo "============================================================"

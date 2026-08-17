@@ -1,5 +1,5 @@
 #!/bin/bash
-# fanctrlplus_loop.sh - 实际运行的风扇控制脚本（支持 Disk + CPU 温控合并）
+# fancontrolplus2_loop.sh - 实际运行的风扇控制脚本（支持 Disk + CPU 温控合并）
 
 cfg_file="$1"
 [[ -f "$cfg_file" ]] || exit 1
@@ -27,7 +27,7 @@ if (( idle_pwm_abs > min_pwm_abs )); then
   idle_pwm_abs="$min_pwm_abs"
 fi
 
-plugin="fanctrlplus"
+plugin="fancontrolplus2"
 custom="${custom:-$(basename "$cfg_file" .cfg)}"
 controller_enable="${controller}_enable"
 
@@ -139,7 +139,7 @@ while true; do
   fi
 
   # 每轮都写入 Dashboard 缓存
-  echo "${max_temp} ${temp_origin}" > "/var/tmp/fanctrlplus/temp_${plugin}_${custom}"
+  echo "${max_temp} ${temp_origin}" > "/var/tmp/fancontrolplus2/temp_${plugin}_${custom}"
 
   # === 若 PWM 有明显变化，或首次 ===
   if [[ "$prev_pwm" == -1 ]]; then
@@ -154,7 +154,7 @@ while true; do
 
     # 无条件写一次
     label="[${custom}]"
-    logger -t fanctrlplus "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
+    logger -t fancontrolplus2 "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
     prev_pwm=$pwm_val
   else
     if (( pwm_val - prev_pwm >= 5 || prev_pwm - pwm_val >= 5 )); then
@@ -170,7 +170,7 @@ while true; do
       label="[${custom}]"
       log_enable=$(grep '^syslog=' "$cfg_file" | cut -d'"' -f2)
       if [[ -z "$log_enable" || "$log_enable" == "1" ]]; then
-        logger -t fanctrlplus "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
+        logger -t fancontrolplus2 "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
       fi
 
       prev_pwm=$pwm_val

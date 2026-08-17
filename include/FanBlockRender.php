@@ -1,5 +1,5 @@
 <?php
-$label_file = "/boot/config/plugins/fanctrlplus/pwm_labels.cfg";
+$label_file = "/boot/config/plugins/fancontrolplus2/pwm_labels.cfg";
 $pwm_labels = [];
 if (is_file($label_file)) {
   foreach (file($label_file, FILE_IGNORE_NEW_LINES) as $line) {
@@ -185,7 +185,7 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors) {
                   value="<?=htmlspecialchars(($cfg['interval'] ?? '') . ' min')?>"
                   placeholder="Recommended: 1–5 min">
 
-            <span class="fanctrlplus-interval-refresh fcp-runnow"
+            <span class="fancontrolplus2-interval-refresh fcp-runnow"
                   title="Manual Run: Read current temperature and set fan speed immediately"
                   data-label="<?=htmlspecialchars($cfg['custom'] ?? '')?>">
               <span class="fa fa-refresh fcp-fs-13"></span> Run Now

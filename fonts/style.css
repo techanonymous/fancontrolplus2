@@ -1,13 +1,13 @@
 @font-face {
-  font-family: 'fanctrlplus';
-  src: url('/plugins/fanctrlplus/fonts/fanctrlplus.woff') format('woff');
+  font-family: 'fancontrolplus2';
+  src: url('/plugins/fancontrolplus2/fonts/fancontrolplus2.woff') format('woff');
   font-weight: normal;
   font-style: normal;
   font-display: block;
 }
 
-.icon-fanctrlplus {
-  font-family: 'fanctrlplus' !important;
+.icon-fancontrolplus2 {
+  font-family: 'fancontrolplus2' !important;
   speak: never;
   font-style: normal;
   font-weight: normal;
@@ -18,6 +18,6 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
-.icon-fanctrlplus:before {
+.icon-fancontrolplus2:before {
   content: "\e900";
 }

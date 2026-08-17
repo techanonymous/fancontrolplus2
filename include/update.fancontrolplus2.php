@@ -1,7 +1,7 @@
 <?php
 ob_start(); // 开启缓冲，防止意外输出破坏 JSON
 
-$plugin = 'fanctrlplus';
+$plugin = 'fancontrolplus2';
 $cfgpath = "/boot/config/plugins/$plugin";
 $rename_map = [];
 $used_files = [];
@@ -220,7 +220,7 @@ foreach (glob("$cfgpath/{$plugin}_*.cfg") as $cfgfile) {
 }
 
 // === 写入 order.cfg 排序顺序（转移至OrderManager。php）===
-require_once "$docroot/plugins/fanctrlplus/include/OrderManager.php";
+require_once "$docroot/plugins/fancontrolplus2/include/OrderManager.php";
 
 $order_left = array_map(function($f) use ($rename_map) {
   return $rename_map[$f] ?? $f;
@@ -232,8 +232,8 @@ $order_right = array_map(function($f) use ($rename_map) {
 
 OrderManager::writeOrder(array_values($order_left), array_values($order_right));
 
-// 重启 fanctrlplus 守护进程
-$script = "/usr/local/emhttp/plugins/$plugin/scripts/rc.fanctrlplus";
+// 重启 fancontrolplus2 守护进程
+$script = "/usr/local/emhttp/plugins/$plugin/scripts/rc.fancontrolplus2";
 if (is_file($script)) {
   exec("bash $script stop > /dev/null 2>&1");
   sleep(1);

@@ -1,6 +1,11 @@
-# **FanCtrl Plus**
+# **FanControl Plus 2**
 
-**FanCtrl Plus** is an Unraid plugin that provides automatic fan control based on the temperatures of HDDs, NVMe drives, Unassigned Devices, and optionally the CPU.  
+> A fork of [**FanCtrl Plus**](https://github.com/ck9393/fanctrlplus) by [ck9393](https://github.com/ck9393),
+> renamed so it installs alongside the original rather than over it.
+> The goal of the fork is to add **IPMI sensors** as a temperature source, next to the
+> existing drive and CPU (k10temp) sensors. All credit for the original plugin goes to ck9393.
+
+**FanControl Plus 2** is an Unraid plugin that provides automatic fan control based on the temperatures of HDDs, NVMe drives, Unassigned Devices, and optionally the CPU.  
 Each fan configuration can monitor specific drives or the CPU, define a temperature range, and scale fan speed automatically using a linear control algorithm.  
 Configuration is done through a user-friendly interface, with custom thresholds, intervals, and labels available per fan.
 
@@ -22,16 +27,23 @@ Configuration is done through a user-friendly interface, with custom thresholds,
 
 ## 🔧 Manual Installation
 
-**FanCtrl Plus** is available in Community Apps (CA). Just search for “**FanCtrl Plus**” to install.
+**FanControl Plus 2** is not in Community Apps. Install it from *Plugins → Install Plugin* using:
+
+```
+https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/fancontrolplus2.plg
+```
 
 Support / Issues
-- https://forums.unraid.net/topic/191722-plugin-fancrtl-plus/
+- https://github.com/techanonymous/fancontrolplus2/issues
 
-- If you find this plugin helpful, consider buying me a coffee!
+For the original plugin, see [ck9393/fanctrlplus](https://github.com/ck9393/fanctrlplus) and its
+[Unraid forum thread](https://forums.unraid.net/topic/191722-plugin-fancrtl-plus/).
+
+- If you find the original plugin helpful, consider buying **ck9393** a coffee!
 
 <p align="left">
   <a href="https://www.paypal.com/paypalme/cck9393" target="_blank">
-    <img src="https://raw.githubusercontent.com/ck9393/fanctrlplus/main/.github/assets/donate.png" alt="Donate" width="90">
+    <img src="https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/.github/assets/donate.png" alt="Donate" width="90">
   </a>
 </p>
 

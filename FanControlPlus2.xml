@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Containers>
+  <Plugin>True</Plugin>
+  <PluginURL>https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/fancontrolplus2.plg</PluginURL>
+  <PluginAuthor>techanonymous</PluginAuthor>
+  <Category>Tools:System</Category>
+  <Name>FanControl Plus 2</Name>
+  <Description>FanControl Plus 2 provides automatic fan speed control based on HDD, NVMe, Unassigned Devices, IPMI, and optional CPU temperatures, with fully customizable fan-to-sensor mapping and UI. Fork of FanCtrl Plus by ck9393.</Description>
+  <MinVer>6.9.0</MinVer>
+  <Support>https://github.com/techanonymous/fancontrolplus2/issues</Support>
+  <Icon>https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/images/fancontrolplus2.png</Icon>
+  <DonateText>This is a fork — donations go to ck9393, the original author of FanCtrl Plus.</DonateText>
+  <DonateLink>https://www.paypal.com/paypalme/cck9393</DonateLink>
+</Containers>

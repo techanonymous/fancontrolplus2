@@ -1,19 +1,19 @@
 #!/bin/bash
 
-plugin="fanctrlplus"
+plugin="fancontrolplus2"
 cfg_path="/boot/config/plugins/$plugin"
-loop_script="/usr/local/emhttp/plugins/$plugin/scripts/fanctrlplus_loop.sh"
-dashboard_updater="/usr/local/emhttp/plugins/$plugin/scripts/fanctrlplus_dashboard_update.sh"
+loop_script="/usr/local/emhttp/plugins/$plugin/scripts/fancontrolplus2_loop.sh"
+dashboard_updater="/usr/local/emhttp/plugins/$plugin/scripts/fancontrolplus2_dashboard_update.sh"
 pid_dir="/var/run"
 
-fanctrlplus.start() {
+fancontrolplus2.start() {
   # 清除用户手动 stop 标记
-  rm -f /var/run/fanctrlplus.user_stopped
+  rm -f /var/run/fancontrolplus2.user_stopped
 
   pkill -f "$loop_script" 2>/dev/null
 
   # 启动前执行migrate_cfg_and_labels
-  php -r "require_once '/usr/local/emhttp/plugins/fanctrlplus/include/Common.php'; migrate_cfg_and_labels('fanctrlplus');"
+  php -r "require_once '/usr/local/emhttp/plugins/fancontrolplus2/include/Common.php'; migrate_cfg_and_labels('fancontrolplus2');"
 
   for cfg in "$cfg_path"/${plugin}_*.cfg; do
     [[ -f "$cfg" ]] || continue
@@ -34,7 +34,7 @@ fanctrlplus.start() {
   done
 
   # ✅ 确保 array_monitor.sh 已启动（若未运行）
-  script="/usr/local/emhttp/plugins/fanctrlplus/scripts/array_monitor.sh"
+  script="/usr/local/emhttp/plugins/fancontrolplus2/scripts/array_monitor.sh"
   if [ -x "$script" ] && ! pgrep -f array_monitor.sh >/dev/null; then
     nohup "$script" >/dev/null 2>&1 &
   fi
@@ -46,18 +46,18 @@ fanctrlplus.start() {
   fi
 }
 
-fanctrlplus.stop() {
+fancontrolplus2.stop() {
   # 设置用户手动停止标记
-  touch /var/run/fanctrlplus.user_stopped
+  touch /var/run/fancontrolplus2.user_stopped
 
   pkill -f "$loop_script"
   rm -f "$pid_dir"/${plugin}_*.pid
-  logger -t "$plugin" "All fanctrlplus stopped"
+  logger -t "$plugin" "All fancontrolplus2 stopped"
 
   # 停止 dashboard updater
   pkill -f "$dashboard_updater"
 
-  # ✅ 只对 fanctrlplus 控制的 pwm 设为 50%，其他不动
+  # ✅ 只对 fancontrolplus2 控制的 pwm 设为 50%，其他不动
   for cfg in "$cfg_path"/${plugin}_*.cfg; do
     [[ -f "$cfg" ]] || continue
 
@@ -76,7 +76,7 @@ fanctrlplus.stop() {
   done
 }
 
-fanctrlplus.status() {
+fancontrolplus2.status() {
   for pidfile in "$pid_dir"/${plugin}_*.pid; do
     [[ -f "$pidfile" ]] || continue
     pid=$(cat "$pidfile")
@@ -89,13 +89,13 @@ fanctrlplus.status() {
 }
 
 case "$1" in
-  start) fanctrlplus.start ;;
-  stop) fanctrlplus.stop ;;
+  start) fancontrolplus2.start ;;
+  stop) fancontrolplus2.stop ;;
   restart)
-    fanctrlplus.stop
+    fancontrolplus2.stop
     sleep 1
-    fanctrlplus.start
+    fancontrolplus2.start
     ;;
-  status) fanctrlplus.status ;;
+  status) fancontrolplus2.status ;;
   *) echo "Usage: $0 {start|stop|restart|status}" ;;
 esac

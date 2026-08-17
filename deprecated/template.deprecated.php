@@ -2,7 +2,7 @@
 // [DEPRECATED] This file was the early version of Fan Block rendering logic.
 // Replaced by FanBlockRender.php -> render_fan_block()
 // Safe to delete if not referenced elsewhere.
-$plugin = 'fanctrlplus';
+$plugin = 'fancontrolplus2';
 $index = isset($_GET['index']) ? (int)$_GET['index'] : 0;
 
 // 获取 PWM 控制器
@@ -21,7 +21,7 @@ $disk_groups = list_valid_disks_by_id();
 ?>
 
 <div class="fan-block" style="display:inline-block; width:48%; vertical-align:top;">
-  <input type="hidden" name="#file[<?=$index?>]" value="fanctrlplus_temp<?=$index?>.cfg" class="cfg-file">
+  <input type="hidden" name="#file[<?=$index?>]" value="fancontrolplus2_temp<?=$index?>.cfg" class="cfg-file">
   <fieldset style="margin:10px; padding:26px 10px 36px 10px; border:1px solid #ccc; border-radius:6px; position:relative;">
     <span class="fan-status" style="position:absolute; top:6px; right:8px;">🔄</span>
     <button type="button" onclick="removeFan(this)" style="position:absolute; bottom:6px; right:8px;">DELETE</button>

@@ -1,6 +1,6 @@
 #!/bin/bash
-# fanctrlplus_dashboard_update.sh - 实时更新 Dashboard 所需的 RPM 和 PWM
-plugin="fanctrlplus"
+# fancontrolplus2_dashboard_update.sh - 实时更新 Dashboard 所需的 RPM 和 PWM
+plugin="fancontrolplus2"
 cfg_path="/boot/config/plugins/$plugin"
 tmp_path="/var/tmp/$plugin"
 

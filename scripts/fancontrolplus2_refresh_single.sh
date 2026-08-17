@@ -1,6 +1,6 @@
 #!/bin/bash
-# fanctrlplus_refresh_single.sh
-plugin="fanctrlplus"
+# fancontrolplus2_refresh_single.sh
+plugin="fancontrolplus2"
 cfg_path="/boot/config/plugins/$plugin"
 custom="$1"
 cfg_file="$cfg_path/${plugin}_$custom.cfg"
@@ -118,6 +118,6 @@ else
 fi
 
 label="[${custom}]"
-logger -t fanctrlplus "Manual Run $label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
+logger -t fancontrolplus2 "Manual Run $label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
 
-echo "${max_temp} ${temp_origin}" > "/var/tmp/fanctrlplus/temp_${plugin}_${custom}"
+echo "${max_temp} ${temp_origin}" > "/var/tmp/fancontrolplus2/temp_${plugin}_${custom}"
