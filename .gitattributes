@@ -1,0 +1,11 @@
+# The plugin ships to Unraid (Linux). A CRLF shell script fails there with a
+# bad-interpreter error, so keep line endings LF in the working tree too --
+# otherwise a .txz built on a Windows checkout produces unrunnable scripts.
+*.sh        text eol=lf
+*.php       text eol=lf
+*.page      text eol=lf
+*.plg       text eol=lf
+scripts/rc.* text eol=lf
+
+*.png  binary
+*.woff binary

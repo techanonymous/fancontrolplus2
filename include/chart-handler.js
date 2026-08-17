@@ -64,6 +64,17 @@ window.showFanChart = function (btn) {
   const hasDiskChart = diskSelected && pwmMin !== null && pwmMax !== null;
   const hasCpuChart = cpuEnabled && cpuLow !== null && cpuHigh !== null;
 
+  // IPMI / SAS：区块可能整段没渲染（未侦测到硬件），getSelectVal 会回传 ''
+  const extraSources = [
+    { key: 'ipmi', label: 'IPMI Temp → PWM (%)', color: '#0f9d58', fillColor: 'rgba(15,157,88,0.1)' },
+    { key: 'sas',  label: 'SAS Temp → PWM (%)',  color: '#f4b400', fillColor: 'rgba(244,180,0,0.1)' }
+  ].map(src => ({
+    ...src,
+    enabled: getSelectVal(`[name^="${src.key}_enable["]`) === '1',
+    low:  getNum(`[name^="${src.key}_min_temp["]`),
+    high: getNum(`[name^="${src.key}_max_temp["]`)
+  }));
+
   if ([pwmMin, pwmMax, tempLow, tempHigh].some(v => v === null)) {
     Swal.fire('⚠️ Missing input', 'Please fill in all Disk Temp and PWM values.', 'warning');
     return;
@@ -121,19 +132,42 @@ window.showFanChart = function (btn) {
     });
   }
 
-  // 控制权注解说明文字
-  let footerNote = '';
+  extraSources.forEach(src => {
+    if (!src.enabled || src.low === null || src.high === null) return;
+    const points = makeLinePoints(src.low, pwmMin, src.high, pwmMax);
+    datasets.push({
+      label: src.label,
+      data: points,
+      borderColor: src.color,
+      backgroundColor: src.fillColor,
+      borderWidth: 2,
+      pointRadius: makePointRadiusArray(points.length),
+      pointHoverRadius: 6,
+      fill: false,
+      tension: 0.4
+    });
+  });
 
-  if (!cpuEnabled && !diskSelected) {
-    footerNote = '⚠️ No rules defined — fan will not be controlled';
-    } else if (cpuEnabled && !diskSelected) {
-    footerNote = '💡 No disk selected — only CPU rule applies';
-    } else if (!cpuEnabled && diskSelected) {
-    footerNote = '💡 CPU control is disabled — only Disk rule applies';
-    } else {
-    footerNote = '💡 CPU and Disk rules are active — Fan PWM = max(Disk, CPU)';
+  // 控制权注解说明文字
+  const activeRules = [];
+  if (diskSelected) activeRules.push('Disk');
+  if (cpuEnabled)   activeRules.push('CPU');
+  extraSources.forEach(src => {
+    if (src.enabled && src.low !== null && src.high !== null) {
+      activeRules.push(src.key.toUpperCase());
     }
-    
+  });
+
+  let footerNote = '';
+  if (activeRules.length === 0) {
+    footerNote = '⚠️ No rules defined — fan will not be controlled';
+  } else if (activeRules.length === 1) {
+    footerNote = `💡 Only the ${activeRules[0]} rule applies`;
+  } else {
+    footerNote = `💡 ${activeRules.join(', ')} rules are active — Fan PWM = max(${activeRules.join(', ')})`;
+  }
+
+
   Swal.fire({
     title: `📈 ${name}`,
     html: `

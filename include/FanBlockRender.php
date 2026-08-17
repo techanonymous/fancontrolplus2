@@ -9,7 +9,7 @@ if (is_file($label_file)) {
   }
 }
 
-function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors) {
+function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $ipmi_sensors = [], $sas_sensors = []) {
   // PWM fallback（如果值为空，则默认 fallback 为 40% 和 100%）
   $pwm_raw = isset($cfg['pwm']) && is_numeric($cfg['pwm']) ? $cfg['pwm'] : 102;
   $max_raw = isset($cfg['max']) && is_numeric($cfg['max']) ? $cfg['max'] : 255;
@@ -303,6 +303,140 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors) {
             </div>
           </td>
         </tr>
+
+        <?php
+        // ===== IPMI =====
+        // 整段仅在偵測到 IPMI 温度传感器时才出现：没装 Unraid IPMI Tools
+        // 插件（/usr/sbin/ipmi-sensors）就读不到，也就不该给出选项。
+        if (!empty($ipmi_sensors)):
+          $ipmi_on      = ($cfg['ipmi_enable'] ?? '') == '1';
+          $ipmi_dis     = $ipmi_on ? '' : 'disabled';
+          $ipmi_cur     = (string)($cfg['ipmi_sensor'] ?? '');
+          $ipmi_missing = ($ipmi_cur !== '' && !isset($ipmi_sensors[$ipmi_cur]));
+        ?>
+        <tr><td colspan="2" class="subhead">IPMI Temperature Settings</td></tr>
+
+        <tr>
+          <td class="fcp-help-cursor" title="Enable or disable monitoring a baseboard (IPMI) temperature sensor for this fan. Readings come from the BMC via the Unraid IPMI Tools plugin.">IPMI Temp Monitor:</td>
+          <td>
+            <select id="ipmi-enable-<?=$i?>" name="ipmi_enable[<?=$i?>]" class="fcp-enable-select"
+                    onchange="handleSourceEnableChange(this, <?=$i?>, 'ipmi');">
+              <option value="0" <?=!$ipmi_on ? 'selected' : ''?>>Disabled</option>
+              <option value="1" <?=$ipmi_on ? 'selected' : ''?>>Enabled</option>
+            </select>
+          </td>
+        </tr>
+
+        <tr class="ipmi-control ipmi-control-<?=$i?>">
+          <td class="fcp-src-label fcp-help-cursor" title="Pick which BMC sensor drives this fan — for example a VRM, DIMM or system inlet sensor. Current readings are shown in brackets.">IPMI Sensor:</td>
+          <td>
+            <select name="ipmi_sensor[<?=$i?>]" class="fcp-src-input fcp-w-300" <?=$ipmi_dis?>>
+              <?php if ($ipmi_missing): ?>
+                <option value="<?=htmlspecialchars($ipmi_cur)?>" selected>
+                  <?=htmlspecialchars($cfg['ipmi_sensor_name'] ?? "Record $ipmi_cur")?> (not detected)
+                </option>
+              <?php endif; ?>
+              <?php foreach ($ipmi_sensors as $rec_id => $sensor): ?>
+                <option value="<?=htmlspecialchars($rec_id)?>" <?=$ipmi_cur === (string)$rec_id ? 'selected' : ''?>>
+                  <?=htmlspecialchars($sensor['label'])?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </td>
+        </tr>
+
+        <tr class="ipmi-control ipmi-control-<?=$i?>">
+          <td class="fcp-src-label fcp-help-cursor" title="Fan runs at minimum speed at or below Low Temp, and maximum speed at or above High Temp.">IPMI Temperature Range:</td>
+          <td>
+            <div class="fcp-range-grid">
+              <input type="text"
+                    id="ipmi_low_temp_input_<?=$i?>"
+                    name="ipmi_min_temp[<?=$i?>]"
+                    class="fcp-src-input fcp-input-fullleft"
+                    inputmode="numeric"
+                    value="<?=htmlspecialchars(($cfg['ipmi_min_temp'] ?? '') !== '' ? $cfg['ipmi_min_temp'].'°C' : '')?>"
+                    placeholder="Low °C" <?=$ipmi_dis?>>
+
+              <span class="fcp-center">~</span>
+
+              <input type="text"
+                    id="ipmi_high_temp_input_<?=$i?>"
+                    name="ipmi_max_temp[<?=$i?>]"
+                    class="fcp-src-input fcp-input-fullleft"
+                    inputmode="numeric"
+                    value="<?=htmlspecialchars(($cfg['ipmi_max_temp'] ?? '') !== '' ? $cfg['ipmi_max_temp'].'°C' : '')?>"
+                    placeholder="High °C" <?=$ipmi_dis?>>
+            </div>
+          </td>
+        </tr>
+        <?php endif; ?>
+
+        <?php
+        // ===== SAS controller =====
+        // 需要 StorCLI2（随 HBAviewer 插件安装于 /opt/MegaRAID）。
+        if (!empty($sas_sensors)):
+          $sas_on   = ($cfg['sas_enable'] ?? '') == '1';
+          $sas_dis  = $sas_on ? '' : 'disabled';
+          $sas_cur  = ($cfg['sas_ctrl'] ?? '') !== ''
+                        ? $cfg['sas_ctrl'] . ':' . ($cfg['sas_probe'] ?? 'chip') : '';
+          $sas_miss = ($sas_cur !== '' && !isset($sas_sensors[$sas_cur]));
+        ?>
+        <tr><td colspan="2" class="subhead">SAS Controller Temperature Settings</td></tr>
+
+        <tr>
+          <td class="fcp-help-cursor" title="Enable or disable monitoring the SAS/HBA controller temperature for this fan. Useful for HBAs in low-airflow slots, which throttle or drop drives when they overheat.">SAS Temp Monitor:</td>
+          <td>
+            <select id="sas-enable-<?=$i?>" name="sas_enable[<?=$i?>]" class="fcp-enable-select"
+                    onchange="handleSourceEnableChange(this, <?=$i?>, 'sas');">
+              <option value="0" <?=!$sas_on ? 'selected' : ''?>>Disabled</option>
+              <option value="1" <?=$sas_on ? 'selected' : ''?>>Enabled</option>
+            </select>
+          </td>
+        </tr>
+
+        <tr class="sas-control sas-control-<?=$i?>">
+          <td class="fcp-src-label fcp-help-cursor" title="Chip is the controller ROC/IOC die and runs much hotter than Board, which is the PCB sensor. Chip is the one to control airflow on.">SAS Sensor:</td>
+          <td>
+            <select name="sas_sensor[<?=$i?>]" class="fcp-src-input fcp-w-300" <?=$sas_dis?>>
+              <?php if ($sas_miss): ?>
+                <option value="<?=htmlspecialchars($sas_cur)?>" selected>
+                  <?=htmlspecialchars($sas_cur)?> (not detected)
+                </option>
+              <?php endif; ?>
+              <?php foreach ($sas_sensors as $key => $label): ?>
+                <option value="<?=htmlspecialchars($key)?>" <?=$sas_cur === $key ? 'selected' : ''?>>
+                  <?=htmlspecialchars($label)?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </td>
+        </tr>
+
+        <tr class="sas-control sas-control-<?=$i?>">
+          <td class="fcp-src-label fcp-help-cursor" title="Fan runs at minimum speed at or below Low Temp, and maximum speed at or above High Temp. Controller chip temperatures idle far higher than disk temperatures — 50–60°C is normal.">SAS Temperature Range:</td>
+          <td>
+            <div class="fcp-range-grid">
+              <input type="text"
+                    id="sas_low_temp_input_<?=$i?>"
+                    name="sas_min_temp[<?=$i?>]"
+                    class="fcp-src-input fcp-input-fullleft"
+                    inputmode="numeric"
+                    value="<?=htmlspecialchars(($cfg['sas_min_temp'] ?? '') !== '' ? $cfg['sas_min_temp'].'°C' : '')?>"
+                    placeholder="Low °C" <?=$sas_dis?>>
+
+              <span class="fcp-center">~</span>
+
+              <input type="text"
+                    id="sas_high_temp_input_<?=$i?>"
+                    name="sas_max_temp[<?=$i?>]"
+                    class="fcp-src-input fcp-input-fullleft"
+                    inputmode="numeric"
+                    value="<?=htmlspecialchars(($cfg['sas_max_temp'] ?? '') !== '' ? $cfg['sas_max_temp'].'°C' : '')?>"
+                    placeholder="High °C" <?=$sas_dis?>>
+            </div>
+          </td>
+        </tr>
+        <?php endif; ?>
       </table>
     </fieldset>
   </div>

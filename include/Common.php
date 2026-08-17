@@ -428,3 +428,88 @@ function detect_cpu_sensors(): array {
 
   return $groups;
 }
+
+// ==========================================================
+// IPMI / SAS 温度源
+//
+// 这两个来源不像 hwmon 那样可以直接读文件，必须调用外部工具
+// （ipmi-sensors ~70ms、storcli2 ~380ms）。为了不让设定页每次
+// 渲染都付这笔代价，PHP 与守护进程共用 fcp2_sensor_sources.sh
+// 的同一份缓存：缓存新鲜时这里的成本接近 0。
+// ==========================================================
+
+function fcp2_sensor_lib(): string {
+  return '/usr/local/emhttp/plugins/fancontrolplus2/scripts/fcp2_sensor_sources.sh';
+}
+
+/** 读取（必要时刷新）共享缓存，返回原始行。 */
+function fcp2_sensor_cache(string $which): array {
+  $lib = fcp2_sensor_lib();
+  if (!is_file($lib)) return [];
+
+  [$refresh, $var] = $which === 'ipmi'
+    ? ['fcp2_ipmi_refresh', 'FCP2_IPMI_CACHE']
+    : ['fcp2_sas_refresh',  'FCP2_SAS_CACHE'];
+
+  $script = sprintf('. %s || exit 1; %s || exit 1; cat "$%s"',
+                    escapeshellarg($lib), $refresh, $var);
+  exec('bash -c ' . escapeshellarg($script) . ' 2>/dev/null', $lines, $rc);
+
+  return $rc === 0 ? $lines : [];
+}
+
+/**
+ * IPMI 温度传感器。key = record id，value = ['name' => ..., 'label' => ...]。
+ * 需要 Unraid IPMI Tools 插件提供 /usr/sbin/ipmi-sensors；插件不在时返回
+ * 空数组，UI 会整段隐藏该区块。
+ */
+function detect_ipmi_sensors(): array {
+  $out = [];
+  foreach (fcp2_sensor_cache('ipmi') as $line) {
+    $f = explode(',', $line);
+    if (count($f) < 5) continue;
+
+    [$id, $name, , $reading] = $f;
+    $id   = trim($id);
+    $name = trim($name);
+
+    // 未接传感器时读数为字面量 'N/A'，直接跳过，不可当成 0。
+    if ($id === '' || $name === '' || !is_numeric($reading)) continue;
+
+    $out[$id] = [
+      'name'  => $name,
+      'label' => sprintf('%s (%d°C)', $name, (int)round((float)$reading)),
+    ];
+  }
+  return $out;
+}
+
+/**
+ * SAS 控制器温度。key = "<ctrl>:<chip|board>"，value = 显示名称。
+ * 依赖 StorCLI2（随 HBAviewer 插件安装于 /opt/MegaRAID）。
+ */
+function detect_sas_sensors(): array {
+  $names = [];
+  $temps = [];
+
+  foreach (fcp2_sensor_cache('sas') as $line) {
+    if (!preg_match('/^c(\d+)\.(name|chip|board)=(.*)$/', $line, $m)) continue;
+    [, $ctrl, $key, $val] = $m;
+    if ($key === 'name') {
+      $names[$ctrl] = $val;
+    } elseif (is_numeric($val)) {
+      $temps["$ctrl:$key"] = (int)$val;
+    }
+  }
+
+  $labels = ['chip' => 'Chip', 'board' => 'Board'];
+  $out = [];
+  foreach ($temps as $key => $temp) {
+    [$ctrl, $probe] = explode(':', $key, 2);
+    $ctrl_name = $names[$ctrl] ?? "Controller $ctrl";
+    $out[$key] = sprintf('%s - %s (%d°C)', $ctrl_name, $labels[$probe] ?? $probe, $temp);
+  }
+
+  ksort($out, SORT_NATURAL);
+  return $out;
+}

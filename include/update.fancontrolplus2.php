@@ -5,6 +5,7 @@ $plugin = 'fancontrolplus2';
 $cfgpath = "/boot/config/plugins/$plugin";
 $rename_map = [];
 $used_files = [];
+$ipmi_catalog = null;   // 惰性载入，一次提交只探测一次 IPMI 传感器
 $docroot = $_SERVER['DOCUMENT_ROOT'] ?: '/usr/local/emhttp';
 
 if (!is_dir($cfgpath)) {
@@ -84,6 +85,53 @@ foreach ($_POST['#file'] as $i => $file) {
   } else {
     $cpu_min_temp = '';
     $cpu_max_temp = '';
+  }
+
+  // ===== IPMI =====
+  // 存 record id 之外再存名称：BMC 韌體更新会重编 record id，
+  // 守护脚本以名称为准做二次解析（见 fcp2_ipmi_temp）。
+  $ipmi_enable      = $_POST['ipmi_enable'][$i] ?? '0';
+  $ipmi_sensor      = trim($_POST['ipmi_sensor'][$i] ?? '');
+  $ipmi_sensor_name = '';
+  $ipmi_min_temp    = '';
+  $ipmi_max_temp    = '';
+
+  if ($ipmi_enable === '1' && $ipmi_sensor !== '') {
+    $imin = preg_replace('/[^0-9]/', '', $_POST['ipmi_min_temp'][$i] ?? '');
+    $imax = preg_replace('/[^0-9]/', '', $_POST['ipmi_max_temp'][$i] ?? '');
+    $ipmi_min_temp = is_numeric($imin) ? intval($imin) : 40;
+    $ipmi_max_temp = is_numeric($imax) ? intval($imax) : 70;
+
+    require_once "$docroot/plugins/$plugin/include/Common.php";
+    if ($ipmi_catalog === null) $ipmi_catalog = detect_ipmi_sensors();
+    // 侦测不到时（插件被移除等）保留原本存下的名称，别把它清空。
+    $prev_cfg = is_file($old_path) ? (parse_ini_file($old_path) ?: []) : [];
+    $ipmi_sensor_name = $ipmi_catalog[$ipmi_sensor]['name']
+      ?? ($prev_cfg['ipmi_sensor_name'] ?? '');
+  } else {
+    $ipmi_enable = '0';
+    $ipmi_sensor = '';
+  }
+
+  // ===== SAS controller =====
+  // UI 以 "<ctrl>:<chip|board>" 单选，落盘时拆成两个键给 shell 用。
+  $sas_enable = $_POST['sas_enable'][$i] ?? '0';
+  $sas_raw    = trim($_POST['sas_sensor'][$i] ?? '');
+  $sas_ctrl   = '';
+  $sas_probe  = '';
+  $sas_min_temp = '';
+  $sas_max_temp = '';
+
+  if ($sas_enable === '1' && preg_match('/^(\d+):(chip|board)$/', $sas_raw, $sm)) {
+    $sas_ctrl  = $sm[1];
+    $sas_probe = $sm[2];
+    $smin = preg_replace('/[^0-9]/', '', $_POST['sas_min_temp'][$i] ?? '');
+    $smax = preg_replace('/[^0-9]/', '', $_POST['sas_max_temp'][$i] ?? '');
+    // HBA 芯片温度基线远高于硬盘，55/80 才是合理的起点。
+    $sas_min_temp = is_numeric($smin) ? intval($smin) : 55;
+    $sas_max_temp = is_numeric($smax) ? intval($smax) : 80;
+  } else {
+    $sas_enable = '0';
   }
 
   // Custom Name 不能为空
@@ -195,6 +243,16 @@ foreach ($_POST['#file'] as $i => $file) {
     'cpu_sensor'    => $cpu_sensor,
     'cpu_min_temp'  => $cpu_min_temp,
     'cpu_max_temp'  => $cpu_max_temp,
+    'ipmi_enable'      => $ipmi_enable,
+    'ipmi_sensor'      => $ipmi_sensor,
+    'ipmi_sensor_name' => $ipmi_sensor_name,
+    'ipmi_min_temp'    => $ipmi_min_temp,
+    'ipmi_max_temp'    => $ipmi_max_temp,
+    'sas_enable'    => $sas_enable,
+    'sas_ctrl'      => $sas_ctrl,
+    'sas_probe'     => $sas_probe,
+    'sas_min_temp'  => $sas_min_temp,
+    'sas_max_temp'  => $sas_max_temp,
   ];
 
   $content = '';

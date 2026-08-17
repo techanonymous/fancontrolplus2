@@ -324,7 +324,8 @@ dt.containerSettingsDt {
 .fan-block.draggable { cursor: move !important; }
 .fan-block.ui-sortable-helper { cursor: grabbing !important; }
 
-.cpu-label.disabled { opacity: 0.5; }
+.cpu-label.disabled,
+.fcp-src-label.disabled { opacity: 0.5; }
 
 .subhead {
   font-weight: bold;
@@ -563,7 +564,8 @@ dt.containerSettingsDt {
   /* 覆盖下拉框行内 300px 宽度 */
   .ui-dropdownchecklist-selector,
   .ui-dropdownchecklist-selector-wrapper,
-  .cpu-input {
+  .cpu-input,
+  .fcp-src-input {
     width: 100% !important;
     max-width: 300px !important;
     display: block !important;
@@ -630,7 +632,8 @@ dt.containerSettingsDt {
   /* 覆盖下拉框行内 300px 宽度 */
   .ui-dropdownchecklist-selector,
   .ui-dropdownchecklist-selector-wrapper,
-  .cpu-input {
+  .cpu-input,
+  .fcp-src-input {
     width: 100% !important;
     max-width: 100% !important;
     display: block !important;

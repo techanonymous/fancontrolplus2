@@ -9,6 +9,16 @@ source "$cfg_file"
 max="${max:-255}"
 controller_enable="${controller}_enable"
 
+# IPMI / SAS 温度源（共享缓存，见 fcp2_sensor_sources.sh）
+_fcp2_lib="$(dirname "$(readlink -f "$0")")/fcp2_sensor_sources.sh"
+if [[ -f "$_fcp2_lib" ]]; then
+  source "$_fcp2_lib"
+else
+  fcp2_ipmi_temp() { return 1; }
+  fcp2_sas_temp()  { return 1; }
+  fcp2_scale() { echo 0; }
+fi
+
 # === CPU 温度 ===
 cpu_pwm_val=0
 if [[ "${cpu_enable:-0}" == "1" && -n "$cpu_sensor" && -f "$cpu_sensor" ]]; then
@@ -29,6 +39,25 @@ else
   cpu_temp="-"
 fi
 
+# === IPMI 温度 ===
+ipmi_pwm_val=0
+ipmi_temp="-"
+if [[ "${ipmi_enable:-0}" == "1" && -n "${ipmi_sensor:-}" ]]; then
+  if t=$(fcp2_ipmi_temp "$ipmi_sensor" "${ipmi_sensor_name:-}"); then
+    ipmi_temp=$t
+    ipmi_pwm_val=$(fcp2_scale "$t" "${ipmi_min_temp:-40}" "${ipmi_max_temp:-70}" "$pwm" "$max")
+  fi
+fi
+
+# === SAS 控制器温度 ===
+sas_pwm_val=0
+sas_temp="-"
+if [[ "${sas_enable:-0}" == "1" && -n "${sas_ctrl:-}" ]]; then
+  if t=$(fcp2_sas_temp "$sas_ctrl" "${sas_probe:-chip}"); then
+    sas_temp=$t
+    sas_pwm_val=$(fcp2_scale "$t" "${sas_min_temp:-55}" "${sas_max_temp:-80}" "$pwm" "$max")
+  fi
+fi
 
 # === Disk 温控 PWM ===
 disk_pwm_val=0
@@ -83,16 +112,21 @@ if [ -n "$disks" ]; then
   fi
 fi
   
-# === 取较高 PWM 作为最终值，同时设定 max_temp 与来源 ===
-if (( cpu_pwm_val > disk_pwm_val )); then
-  pwm_val=$cpu_pwm_val
-  max_temp=$cpu_temp
-  temp_origin="(CPU)"
-else
-  pwm_val=$disk_pwm_val
-  max_temp=$disk_max
-  temp_origin=$([ -n "$disks" ] && echo "(Disk)" || echo "(CPU)")
-fi
+# === 取最高 PWM 作为最终值，同时设定 max_temp 与来源 ===
+pwm_val=$disk_pwm_val
+max_temp=$disk_max
+temp_origin=$([ -n "$disks" ] && echo "(Disk)" || echo "")
+
+for _src in "CPU:$cpu_pwm_val:$cpu_temp" \
+            "IPMI:$ipmi_pwm_val:$ipmi_temp" \
+            "SAS:$sas_pwm_val:$sas_temp"; do
+  IFS=: read -r _name _spwm _stemp <<< "$_src"
+  if (( _spwm > pwm_val )); then
+    pwm_val=$_spwm
+    max_temp=$_stemp
+    temp_origin="($_name)"
+  fi
+done
 
 # 避免空写入
 if [[ ! "$max_temp" =~ ^[0-9]+$ ]]; then

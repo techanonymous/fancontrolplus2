@@ -59,6 +59,16 @@ cpu_enable="0"
 cpu_sensor=""
 cpu_min_temp=""
 cpu_max_temp=""
+ipmi_enable="0"
+ipmi_sensor=""
+ipmi_sensor_name=""
+ipmi_min_temp=""
+ipmi_max_temp=""
+sas_enable="0"
+sas_ctrl=""
+sas_probe=""
+sas_min_temp=""
+sas_max_temp=""
 INI
 );
   }
@@ -134,6 +144,10 @@ $pwms = list_pwm();
 $disks = list_valid_disks_by_id();
 $width = 300;
 $cpu_sensors = detect_cpu_sensors();
+// 两者都是「探测不到就整段隐藏」：IPMI 需要 Unraid IPMI Tools 插件，
+// SAS 需要 StorCLI2（随 HBAviewer 安装）。读的是守护进程同一份缓存。
+$ipmi_sensors = detect_ipmi_sensors();
+$sas_sensors  = detect_sas_sensors();
 
 // === 读取 FCP Airflow 开关 ===
 function fcp_airflow_enabled(string $cfg_dir): bool {
@@ -458,6 +472,10 @@ $(function() {
           { selector: 'input[id^="high_temp_input_"]', unit: '°C', min: 1, max: 100 },
           { selector: 'input[id^="cpu_low_temp_input_"]', unit: '°C', min: 1, max: 95 },
           { selector: 'input[id^="cpu_high_temp_input_"]', unit: '°C', min: 1, max: 110 },
+          { selector: 'input[id^="ipmi_low_temp_input_"]', unit: '°C', min: 1, max: 110 },
+          { selector: 'input[id^="ipmi_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
+          { selector: 'input[id^="sas_low_temp_input_"]', unit: '°C', min: 1, max: 110 },
+          { selector: 'input[id^="sas_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
           { selector: 'input[id^="interval_input_"]', unit: ' min', min: 1, max: 60 }
         ]);
 
@@ -465,6 +483,7 @@ $(function() {
           const index = this.id.replace('cpu-enable-', '');
           window.handleCpuEnableChange(this, index);
         });
+        window.applySourceEnableState($html[0]);
 
         bindFanSpeedEvents();
         bindIdleEvents();
@@ -609,6 +628,10 @@ $(function() {
       { selector: 'input[id^="high_temp_input_"]', unit: '°C', min: 1, max: 100 },
       { selector: 'input[id^="cpu_low_temp_input_"]', unit: '°C', min: 1, max: 95 },
       { selector: 'input[id^="cpu_high_temp_input_"]', unit: '°C', min: 1, max: 110 },
+      { selector: 'input[id^="ipmi_low_temp_input_"]', unit: '°C', min: 1, max: 110 },
+      { selector: 'input[id^="ipmi_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
+      { selector: 'input[id^="sas_low_temp_input_"]', unit: '°C', min: 1, max: 110 },
+      { selector: 'input[id^="sas_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
       { selector: 'input[id^="interval_input_"]', unit: ' min', min: 1, max: 60 }
     ]);
     loadPWMOptions();
@@ -856,6 +879,19 @@ $(function() {
     });
   }
 
+  // IPMI / SAS 区块在没侦测到硬件时根本不会渲染，所以这里逐一取值而不是
+  // 写死栏位名；缺席的栏位得到 undefined，两边一致，不会误判为已修改。
+  function collectSourceFields($block) {
+    const out = {};
+    ['ipmi', 'sas'].forEach(p => {
+      out[`${p}_enable`]   = $block.find(`select[name^="${p}_enable["]`).val();
+      out[`${p}_sensor`]   = $block.find(`select[name^="${p}_sensor["]`).val();
+      out[`${p}_min_temp`] = stripUnit($block.find(`input[name^="${p}_min_temp["]`).val());
+      out[`${p}_max_temp`] = stripUnit($block.find(`input[name^="${p}_max_temp["]`).val());
+    });
+    return out;
+  }
+
   function initOriginalForBlock($block) {
     const original = {
       custom: $block.find('input[name^="custom["]').val(),
@@ -871,7 +907,8 @@ $(function() {
       cpu_enable: $block.find('select[name^="cpu_enable["]').val(),
       cpu_sensor: $block.find('select[name^="cpu_sensor["]').val(),
       cpu_min_temp: stripUnit($block.find('input[name^="cpu_min_temp["]').val()),
-      cpu_max_temp: stripUnit($block.find('input[name^="cpu_max_temp["]').val())
+      cpu_max_temp: stripUnit($block.find('input[name^="cpu_max_temp["]').val()),
+      ...collectSourceFields($block)
     };
     $block.data('original', original);
   }
@@ -896,7 +933,8 @@ $(function() {
         cpu_enable: $block.find('select[name^="cpu_enable["]').val(),
         cpu_sensor: $block.find('select[name^="cpu_sensor["]').val(),
         cpu_min_temp: stripUnit($block.find('input[name^="cpu_min_temp["]').val()),
-        cpu_max_temp: stripUnit($block.find('input[name^="cpu_max_temp["]').val())
+        cpu_max_temp: stripUnit($block.find('input[name^="cpu_max_temp["]').val()),
+        ...collectSourceFields($block)
       };
 
       if (JSON.stringify(original) !== JSON.stringify(current)) {
@@ -1414,6 +1452,46 @@ $(function() {
     }
   };
 
+  // IPMI / SAS 与 CPU 结构相同，只是前缀不同，故共用一个泛化版本。
+  // 沿用 .fcp-src-input / .fcp-src-label 这组类，避免复制 CPU 的样式。
+  const FCP_SOURCES = {
+    ipmi: { low: 40, high: 70 },
+    sas:  { low: 55, high: 80 }   // HBA 芯片温度基线远高于硬盘
+  };
+
+  window.handleSourceEnableChange = function(selectEl, index, prefix) {
+    const enabled = selectEl.value === "1";
+
+    document.querySelectorAll(`.${prefix}-control-${index}`).forEach(row => {
+      row.querySelectorAll('.fcp-src-input').forEach(el => {
+        el.disabled = !enabled;
+        el.classList.toggle('disabled', !enabled);
+      });
+      row.querySelectorAll('.fcp-src-label').forEach(label => {
+        label.classList.toggle('disabled', !enabled);
+      });
+    });
+
+    if (enabled) {
+      const d = FCP_SOURCES[prefix] || { low: 40, high: 70 };
+      const lowInput  = document.querySelector(`#${prefix}_low_temp_input_${index}`);
+      const highInput = document.querySelector(`#${prefix}_high_temp_input_${index}`);
+      if (lowInput  && lowInput.value.trim()  === '') lowInput.value  = `${d.low}°C`;
+      if (highInput && highInput.value.trim() === '') highInput.value = `${d.high}°C`;
+    }
+  };
+
+  // 只套用初始状态；change 事件由 FanBlockRender 的 inline onchange 负责，
+  // 这样动态新增的 fan block 不必再另行绑定（与 CPU 区块的做法一致）。
+  window.applySourceEnableState = function(root) {
+    const scope = root || document;
+    Object.keys(FCP_SOURCES).forEach(prefix => {
+      scope.querySelectorAll(`select[id^="${prefix}-enable-"]`).forEach(select => {
+        window.handleSourceEnableChange(select, select.id.replace(`${prefix}-enable-`, ''), prefix);
+      });
+    });
+  };
+
   // 初始化所有 block 的状态，并绑定 onchange
   window.addEventListener('load', function () {
     requestAnimationFrame(() => {
@@ -1425,6 +1503,7 @@ $(function() {
           window.handleCpuEnableChange(this, index);
         });
       });
+      window.applySourceEnableState(document);
     });
   });
   setTimeout(() => {
@@ -1452,7 +1531,7 @@ $(function() {
           $cfg = parse_ini_file($path);
           $cfg['file'] = $file;
           $all_cfg[] = $cfg;
-          echo render_fan_block($cfg, $i++, $pwms, $disks, $pwm_labels, $cpu_sensors);
+          echo render_fan_block($cfg, $i++, $pwms, $disks, $pwm_labels, $cpu_sensors, $ipmi_sensors, $sas_sensors);
         }
       }
       ?>
@@ -1465,7 +1544,7 @@ $(function() {
           $cfg = parse_ini_file($path);
           $cfg['file'] = $file;
           $all_cfg[] = $cfg;
-          echo render_fan_block($cfg, $i++, $pwms, $disks, $pwm_labels, $cpu_sensors);
+          echo render_fan_block($cfg, $i++, $pwms, $disks, $pwm_labels, $cpu_sensors, $ipmi_sensors, $sas_sensors);
         }
       }
       ?>
@@ -1483,7 +1562,7 @@ $(function() {
       $cfg = parse_ini_file($path);
       $cfg['file'] = $basename;
       $all_cfg[] = $cfg;
-      $html = addslashes(render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors));
+      $html = addslashes(render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $ipmi_sensors, $sas_sensors));
       if ($count_left <= $count_right) {
         $target = '#fan-column-left';
         $count_left++;
