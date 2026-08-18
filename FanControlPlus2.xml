@@ -5,10 +5,8 @@
   <PluginAuthor>techanonymous</PluginAuthor>
   <Category>Tools:System</Category>
   <Name>FanControl Plus 2</Name>
-  <Description>Fork of FanCtrl Plus by ck9393, with all credit for the original plugin to him. Provides automatic fan speed control based on HDD, NVMe, Unassigned Devices and CPU temperatures, and adds two sources: IPMI baseboard sensors (needs the IPMI Tools plugin) and SAS/HBA controller temperature (needs HBAviewer for StorCLI2). Both are optional - if the tool is absent the section is simply hidden. Renamed so it installs alongside the original rather than over it. Fork changes are MIT licensed.</Description>
+  <Description>Automatic fan speed control based on HDD, NVMe, Unassigned Devices, CPU, IPMI baseboard and SAS/HBA controller temperatures. When several sources are enabled, the fan runs at the highest speed any of them asks for. IPMI needs the IPMI Tools plugin and SAS needs HBAviewer for StorCLI2; both are optional - without them those sections are simply hidden.</Description>
   <MinVer>6.9.0</MinVer>
   <Support>https://github.com/techanonymous/fancontrolplus2/issues</Support>
   <Icon>https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/images/fancontrolplus2.png</Icon>
-  <DonateText>This is a fork — donations go to ck9393, the original author of FanCtrl Plus.</DonateText>
-  <DonateLink>https://www.paypal.com/paypalme/cck9393</DonateLink>
 </Containers>

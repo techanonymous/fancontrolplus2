@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.19f">
+<!ENTITY version "2026.08.19g">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -17,11 +17,18 @@
 </ICON>
 
 <CHANGES>
-**Fork of FanCtrl Plus by ck9393** — all credit for the plugin goes to him.
-This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
-extra per-fan temperature sources, and is renamed so it installs alongside the
-original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
+Automatic fan speed control driven by disk, CPU, IPMI baseboard and SAS/HBA
+controller temperatures. When several sources are enabled, the fan runs at the
+highest speed any of them asks for.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.19g
+- **Fixed:** the Chart popup reported "No runtime data yet" and drew no crosshair for
+  fans driven by IPMI or SAS. Its realtime parser only accepted (CPU) and (Disk)
+  origins, so the IPMI and SAS readings the daemon writes were discarded, and the
+  crosshair was a two-way CPU-or-Disk choice. Both now handle every source.
+- The Plugins page description and the plugin info no longer name the original author;
+  attribution remains in LICENSE, NOTICE and the GitHub README.
 
 ###2026.08.19f
 - **Fixed:** the Dashboard tile showed "--" instead of the temperature when the

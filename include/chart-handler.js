@@ -14,8 +14,10 @@ async function fetchRealtimeData(custom) {
   // 统一用同一份 raw
   const [tempPart, rpmStr = ''] = raw.split('|');
 
-  // 1) 星号：磁盘休眠 / Idle
-  const starMatch = /^\*\s*\((CPU|Disk|Idle)\)/i.exec(tempPart);
+  // 1) 星号：无有效温度源（磁盘休眠 / 传感器读不到）
+  // Origin is matched generically: the daemon emits CPU, Disk, IPMI, SAS or Idle,
+  // and hard-coding a subset silently reported "no runtime data" for the rest.
+  const starMatch = /^\*\s*\(([A-Za-z]+)\)/.exec(tempPart);
   if (starMatch) {
     const origin = starMatch[1]; // CPU / Disk / Idle
     const rpm = /^\d+$/.test(rpmStr) ? parseInt(rpmStr, 10) : null;
@@ -24,7 +26,7 @@ async function fetchRealtimeData(custom) {
   }
 
   // 2) 正常数字温度
-  const numMatch = /(\d+)\s*\((CPU|Disk)\)/i.exec(tempPart);
+  const numMatch = /(\d+)\s*\(([A-Za-z]+)\)/.exec(tempPart);
   if (!numMatch) return { noCache: true };
 
   const temp   = parseInt(numMatch[1], 10);
@@ -188,8 +190,12 @@ window.showFanChart = function (btn) {
     const snapDiskSelected = !!(disksElSnap && disksElSnap.selectedOptions && disksElSnap.selectedOptions.length > 0);
 
     // 找到对应的 dataset（有可能没有）
-    const dsCPU  = datasets.find(d => d.label && d.label.includes('CPU'));
-    const dsDisk = datasets.find(d => d.label && d.label.includes('Disk'));
+    // Map every origin the daemon can report to its curve. Previously this was a
+    // two-way choice (CPU or Disk), so an IPMI or SAS origin fell through to the
+    // Disk curve - which often does not exist - and the crosshair never appeared.
+    const dsFor = o => datasets.find(d => d.label && d.label.startsWith(o));
+    const dsCPU  = dsFor('CPU');
+    const dsDisk = dsFor('Disk');
 
     // 顶部 Current 文本节点
     const liveNote = document.getElementById('fan-chart-live-note');
@@ -359,7 +365,7 @@ window.showFanChart = function (btn) {
           }
           vLine.style.display = hLine.style.display = dot.style.display = 'none';
         } else {
-          const ds = origin === 'CPU' ? dsCPU : dsDisk;
+          const ds = dsFor(String(origin ?? '').trim()) ?? dsDisk;
           percent = pickPercentNearest(ds, temp);
           if (percent != null) {
             const pwm = Math.round(percent * 2.55);
