@@ -646,7 +646,9 @@ $(function() {
   });
 
   function stripUnit(val) {
-    return (val ?? '').toString().replace(/\s*(min|°C|%)/gi, '').trim();
+    // Unit is anchored to the END. 's' was added when Interval became seconds, and
+    // an unanchored /s/ would eat any stray letter s in a value.
+    return (val ?? '').toString().replace(/\s*(min|°C|%|s)\s*$/i, '').trim();
   }
 
   // Identify 弹窗块
@@ -1091,9 +1093,9 @@ $(function() {
 
       namesSeen.add(name);
 
-      if (!/^\d+$/.test(interval) || parseInt(interval) <= 0) {
+      if (!/^\d+$/.test(interval) || parseInt(interval) < 10 || parseInt(interval) > 3600) {
         valid = false;
-        errorMsg = 'Interval cannot be empty or 0 (recommended: 1–5 min).';
+        errorMsg = 'Interval must be between 10 and 3600 seconds.';
         return false;
       } 
     });
@@ -1143,7 +1145,7 @@ $(function() {
       return;
     }
 
-    $('.interval-input, .low-temp-input, .high-temp-input, .pwm-percent-input, .max-percent-input').each(function(){
+    $('.interval-input, .low-temp-input, .high-temp-input, .pwm-percent-input, .max-percent-input, input[id^="hysteresis_input_"], input[id^="slewdown_input_"]').each(function(){
       this.value = stripUnit(this.value);
     });
 
