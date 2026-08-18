@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "1.3.3">
+<!ENTITY version "2026.08.18">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/fancontrolplus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -23,7 +23,29 @@ extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
 
-###&version;
+###2026.08.18
+- First release of this fork.
+- **New:** IPMI baseboard temperature sensors as a per-fan source (VRM, DIMM,
+  system inlet, chipset, NIC). Requires the Unraid IPMI Tools plugin.
+- **New:** SAS/HBA controller temperature (chip or board) as a per-fan source.
+  Requires StorCLI2, as installed by the HBAviewer plugin.
+- Fan speed is now the highest PWM requested by any enabled source:
+  Disk, CPU, IPMI or SAS.
+- Sensors reading N/A are treated as unreadable, never as 0&#176;C.
+- IPMI record IDs are stored with the sensor name and re-resolved by name if
+  a BMC firmware update renumbers them.
+- Readings are cached and refreshed under flock, so many fan configurations
+  do not each poll the BMC or HBA.
+- Renamed throughout so this installs alongside FanCtrl Plus rather than
+  replacing it.
+- **Security:** Identify now whitelists the PWM path. Previously any existing
+  file named in the request would be written to.
+- **Security:** config filename validation on delete/setsyslog, PHP errors no
+  longer displayed, escapeshellarg on the migrate logger, LOCK_EX on all
+  config writes.
+- **Fixed:** divide-by-zero when a temperature range has low == high.
+
+###1.3.3 (upstream)
 - Added Fan Speed on Idle option for fans without active temperature sources
 - Dashboard and chart now support display of Idle state
 -	Improved responsive UI touch behavior (less drag interference from sortable blocks)

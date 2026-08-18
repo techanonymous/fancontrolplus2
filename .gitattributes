@@ -1,10 +1,20 @@
 # The plugin ships to Unraid (Linux). A CRLF shell script fails there with a
 # bad-interpreter error, so keep line endings LF in the working tree too --
 # otherwise a .txz built on a Windows checkout produces unrunnable scripts.
-*.sh        text eol=lf
-*.php       text eol=lf
-*.page      text eol=lf
-*.plg       text eol=lf
+# Everything textual is pinned, not just the scripts, so a build is byte-for-byte
+# the same wherever it is produced.
+*.sh         text eol=lf
+*.php        text eol=lf
+*.page       text eol=lf
+*.plg        text eol=lf
+*.css        text eol=lf
+*.js         text eol=lf
+*.md         text eol=lf
+*.xml        text eol=lf
+*.svg        text eol=lf
+*.cfg        text eol=lf
+LICENSE      text eol=lf
+NOTICE       text eol=lf
 scripts/rc.* text eol=lf
 
 *.png  binary
