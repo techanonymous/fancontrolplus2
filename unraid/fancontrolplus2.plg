@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.18b">
+<!ENTITY version "2026.08.18c">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -22,6 +22,20 @@ This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.18c
+- **Interval is now in seconds**, minimum 10s (was whole minutes, minimum 60s).
+  Short intervals suit fans cooling CPU, VRM, DIMMs or add-in cards, which heat
+  in seconds. Existing configurations are converted automatically.
+- **New: Temp Hysteresis** (default 2&#176;C). Ignores temperature changes smaller
+  than this, so a jittery sensor stops making the fan hunt. It does not delay a
+  genuine rise - a real change crosses the band immediately.
+- **New: Ramp Down Limit** (default 3%). Caps how far the fan can slow per
+  interval, so it glides down instead of stepping. Speeding UP is never limited,
+  so response to a real thermal event is unaffected.
+- Sensor cache lifetimes now follow the interval, so a fast fan is never served
+  a stale reading from its own previous cycle.
+- The 4s RPM settle delay is now counted inside the interval, not added to it.
 
 ###2026.08.18b
 - Settings menu: the page file is now FanControlPlus2.page, so the entry sorts
