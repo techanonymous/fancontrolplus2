@@ -1634,6 +1634,13 @@ $(function() {
 
     <p><strong>Fan Speed Range:</strong> This sets the minimum and maximum PWM duty cycle values. For example, setting the range to 40–80% means the fan will always run at least 40% speed when cool, and will not exceed 80% speed even at high temperatures.</p>
 
+    <p><strong>Fan Speed on Idle / Unreadable:</strong> Used <em>only</em> when no temperature source can be
+        read at all &mdash; every selected disk spun down, the enabled sensors unreadable, or no source enabled.<br>
+        It is <strong>not</strong> the speed used when temperatures are merely low. Below the Low Temp the fan
+        runs at the <strong>Min</strong> of Fan Speed Range &mdash; so with a 40&ndash;100% range and a 10% idle
+        value, a cool but readable sensor gives <strong>40%</strong>, not 10%. If you want a lower speed when
+        cool, lower the Min rather than the idle value.</p>
+
     <p><strong>Interval:</strong> How often the plugin reads temperatures and adjusts the fan,
         <strong>in seconds</strong>. The minimum is <strong>10&nbsp;seconds</strong> &mdash; below that there is
         nothing to gain, since a single round of SMART reads already takes a few hundred milliseconds.
@@ -1703,7 +1710,7 @@ $(function() {
       <ul style="margin: 6px 0 10px 16px;">
         <li><strong>Only one source enabled:</strong> that source alone sets the speed — for Disk, the highest temperature among the selected disks.</li>
         <li><strong>Several enabled:</strong> each of Disk, CPU, IPMI and SAS maps <em>its own</em> temperature range to a speed, and the highest of those speeds wins. Note this is not simply the highest temperature: a 45°C disk on a 40–50°C range asks for more than a 60°C HBA on a 55–85°C range.</li>
-        <li><strong>None readable:</strong> the fan falls back to <em>Fan Speed on Idle</em>.</li>
+        <li><strong>None readable:</strong> the fan falls back to <em>Fan Speed on Idle / Unreadable</em>.</li>
       </ul>
 
       <p style="margin: 10px 0 6px 0; font-weight: bold;">Example:</p>

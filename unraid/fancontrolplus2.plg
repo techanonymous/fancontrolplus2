@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.19a">
+<!ENTITY version "2026.08.19b">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -22,6 +22,14 @@ This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.19b
+- Renamed **Fan Speed on Idle** to **Fan Speed on Idle / Unreadable**, because it only
+  applies when no sensor can be read at all &mdash; not when temperatures are merely low.
+  Below the Low Temp the fan runs at the Min of Fan Speed Range instead. Tooltip and
+  Help &amp; Tips now spell that out with an example.
+- The spinning fan icon showed a help cursor but had no tooltip. It now explains that
+  it is a status indicator, not a button: spinning means that fan's loop is running.
 
 ###2026.08.19a
 - **Fixed:** Apply All rejected any interval with "Interval cannot be empty or 0

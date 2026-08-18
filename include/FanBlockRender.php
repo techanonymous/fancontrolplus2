@@ -41,7 +41,8 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
     <fieldset class="fan-fieldset">
       <div class="fcp-fan-icon-wrap">
         <div class="fan-svg-container fcp-abs-fill">
-          <div class="fcp-abs-fill-help"></div>
+          <div class="fcp-abs-fill-help"
+                 title="Status indicator, not a button.&#10;Spinning = this fan's control loop is running.&#10;Still = stopped or disabled.&#10;&#10;Use Start / Stop at the bottom of the page to change it."></div>
           <svg class="fcp-fan-icon" id="fan-icon-<?=$i?>" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
             <defs>
               <linearGradient id="flameGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -167,8 +168,8 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
 
         <tr>
           <td class="fcp-help-cursor"
-              title="Fan speed used when there is no temperature source (all HDDs are spun down and CPU monitoring is not enabled).&#10;Must be ≤ the Min value in Fan Speed Range.&#10;Default 0% = completely stopped.">
-            Fan Speed on Idle:
+              title="Fan speed used only when NO temperature source can be read at all &mdash; every selected disk spun down, or the enabled sensors unreadable, or no source enabled.&#10;&#10;This is NOT the speed when temperatures are simply low: below the Low Temp the fan runs at the Min value of Fan Speed Range.&#10;&#10;Must be &le; that Min value. Default 0% = completely stopped.">
+            Fan Speed on Idle / Unreadable:
           </td>
           <td>
             <input type="text"
@@ -177,7 +178,7 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
                   inputmode="numeric"
                   class="fcp-input-idle"
                   value="<?=$idle_pct?>"
-                  title="Idle speed: <?=$idle_pct?> = <?=htmlspecialchars($idle_abs)?> PWM"
+                  title="Used only when no sensor can be read: <?=$idle_pct?> = <?=htmlspecialchars($idle_abs)?> PWM"
                   placeholder="Idle %">
           </td>
         </tr>
