@@ -25,7 +25,7 @@ Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
 
 ###2026.08.19b
 - Renamed **Fan Speed on Idle** to **Fan Speed on Idle / Unreadable**, because it only
-  applies when no sensor can be read at all &mdash; not when temperatures are merely low.
+  applies when no sensor can be read at all — not when temperatures are merely low.
   Below the Low Temp the fan runs at the Min of Fan Speed Range instead. Tooltip and
   Help &amp; Tips now spell that out with an example.
 - The spinning fan icon showed a help cursor but had no tooltip. It now explains that
