@@ -1632,7 +1632,12 @@ $(function() {
 
     <p><strong>Fan Speed Range:</strong> This sets the minimum and maximum PWM duty cycle values. For example, setting the range to 40–80% means the fan will always run at least 40% speed when cool, and will not exceed 80% speed even at high temperatures.</p>
 
-    <p><strong>Interval:</strong> How often the plugin checks disk (and, if enabled, CPU) temperatures and adjusts fan speed accordingly. Shorter intervals provide more responsive cooling but may result in more frequent fan changes.</p>  
+    <p><strong>Interval:</strong> How often the plugin reads temperatures and adjusts the fan,
+        <strong>in seconds</strong>. The minimum is <strong>10&nbsp;seconds</strong> &mdash; below that there is
+        nothing to gain, since a single round of SMART reads already takes a few hundred milliseconds.
+        Configurations created before this became second-based were converted automatically
+        (a 1-minute interval became 60&nbsp;seconds).
+    </p>
 
     <p><strong>Run Now:</strong> Immediately applies the current fan setting based on the latest temperature. Useful for testing or verifying PWM control and fan response without waiting for the next scheduled check.</p>
 
@@ -1650,9 +1655,41 @@ $(function() {
         The <strong>CPU Sensor</strong> is automatically set to the most reliable reading; change only if necessary.<br>
     </p>
 
-    <p><strong>Chart:</strong> Click the <strong>Chart</strong> button in a fan block to preview the fan speed curve based on your current settings.  
-        Since <strong>v1.3.1</strong>, CPU temperature can also be used as a control source.  
-        The chart will show separate curves for <strong>Disk</strong> and <strong>CPU</strong> rules (if both are enabled) and highlight the current operating point in real time.
+    <?php if (!empty($ipmi_sensors)): ?>
+    <p><strong>IPMI Temperature Settings:</strong>
+        Works the same way, using a baseboard sensor read from the BMC &mdash; VRM, DIMM banks, system inlet,
+        chipset, add-in NICs, whatever your board exposes. Readings come in-band via <code>/dev/ipmi0</code>,
+        so no BMC address or password is ever configured or stored.<br>
+        Needs the <strong>IPMI Tools</strong> plugin. Sensors that report <code>N/A</code> (a header with nothing
+        attached) are left out of the list, and are never treated as 0&deg;C.<br>
+        <em>Tip:</em> these components heat far faster than disks, so pair them with a short Interval.
+    </p>
+    <?php endif; ?>
+
+    <?php if (!empty($sas_sensors)): ?>
+    <p><strong>SAS Controller Temperature Settings:</strong>
+        Works the same way, using your SAS/HBA controller temperature. <strong>Chip</strong> is the controller die
+        and runs much hotter than <strong>Board</strong>, the PCB sensor &mdash; Chip is the one worth cooling.<br>
+        Needs <strong>HBAviewer</strong> (for StorCLI2).<br>
+        <em>Tip:</em> controller chips idle far hotter than disks &mdash; 50&ndash;60&deg;C is normal, so a disk-like
+        40&ndash;70&deg;C range would hold the fan at full speed permanently. Start around 55&ndash;80&deg;C.
+    </p>
+    <?php endif; ?>
+
+    <p><strong>Temp Hysteresis:</strong> Ignores temperature changes smaller than this, so a sensor that jitters
+        by a degree does not keep nudging the fan. It compares against the temperature the fan
+        <em>last acted on</em>, not the last reading, so it never blocks a genuine sustained change &mdash;
+        a real rise crosses the band on the very next check. Set 0 to disable.
+    </p>
+
+    <p><strong>Ramp Down Limit:</strong> The largest speed <em>drop</em> allowed per interval. Slowing down
+        gradually is inaudible; dropping in one step is not. <strong>Speeding up is never limited</strong>, so
+        response to a real thermal event is unaffected. Set 0 to disable.
+    </p>
+
+    <p><strong>Chart:</strong> Click the <strong>Chart</strong> button in a fan block to preview the fan speed curve based on your current settings.
+        The chart draws a separate curve for every enabled source &mdash; Disk, CPU<?= !empty($ipmi_sensors) ? ', IPMI' : '' ?><?= !empty($sas_sensors) ? ', SAS' : '' ?> &mdash;
+        so you can see which one is asking for the most speed at any temperature. The live marker follows the Disk and CPU curves.
     </p>
 
     <p style="margin: 10px 0 6px 0; font-weight: bold;">How it works:</p>
@@ -1693,7 +1730,26 @@ $(function() {
         <li>Disk 48°C → 94%, CPU 70°C → 70% → Result = <strong>94%</strong> (Disk)</li>
       </ul>
 
-      <p style="margin-top: 8px;"><em>Tip:</em> For CPU-based control, consider setting a <strong>shorter interval</strong> (e.g. 1&nbsp;minute) for better responsiveness.</p>
+      <p style="margin: 10px 0 6px 0; font-weight: bold;">Hysteresis and Ramp Down, by example:</p>
+
+      <p>Say the fan is at <strong>60%</strong>, Temp Hysteresis is <strong>2&deg;C</strong> and Ramp Down Limit
+         is <strong>3%</strong>, checking every 10&nbsp;seconds:</p>
+      <ul style="margin: 4px 0 8px 16px;">
+        <li>Temp wobbles 45&deg;C &rarr; 46&deg;C &rarr; 45&deg;C &mdash; less than 2&deg;C from the last acted-on
+            reading, so the fan is left alone. Without hysteresis it would step up and down every 10 seconds.</li>
+        <li>Temp climbs to 48&deg;C &mdash; that is 3&deg;C, so a new target is taken. The curve asks for 90%, and
+            the fan goes there <strong>immediately</strong>: upward moves are never limited.</li>
+        <li>Temp falls back to 45&deg;C &mdash; the curve asks for 60% again, but the fan steps down 3% per check:
+            87%, 84%, 81% &hellip; taking about a minute and a half to glide back rather than dropping at once.</li>
+      </ul>
+
+      <p style="margin-top: 8px;"><em>Tip:</em> if a fan still steps audibly, the usual cause is a narrow
+         temperature range rather than the interval. A 38&ndash;45&deg;C range spans only 7&deg;C, so each
+         whole degree is a ~13% jump; widening it to 35&ndash;55&deg;C makes each degree about 4%.</p>
+
+      <p style="margin-top: 8px;"><em>Tip:</em> Components that heat quickly &mdash; CPU, VRM, DIMMs, add-in cards &mdash;
+        benefit from a <strong>short interval</strong> (10&ndash;30&nbsp;seconds). Disks change slowly, so 60&ndash;300&nbsp;seconds
+        is plenty and avoids needless SMART reads.</p>
     </div>
 
     <p><strong>Disks:</strong> Only the selected disks will be monitored to control this fan. Multiple fans can monitor overlapping disks, and one disk can be assigned to multiple fans.</p>
