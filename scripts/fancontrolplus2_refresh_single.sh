@@ -33,6 +33,7 @@ if [[ "${cpu_enable:-0}" == "1" && -n "$cpu_sensor" && -f "$cpu_sensor" ]]; then
   else
     delta=$((cpu_temp - cpu_min_temp))
     range=$((cpu_max_temp - cpu_min_temp))
+    (( range == 0 )) && range=1
     cpu_pwm_val=$((pwm + delta * (max - pwm) / range))
   fi
 else
@@ -107,6 +108,7 @@ if [ -n "$disks" ]; then
     else
       delta=$((disk_max - low))
       range=$((high - low))
+      (( range == 0 )) && range=1
       disk_pwm_val=$((pwm + delta * (max - pwm) / range))
     fi
   fi

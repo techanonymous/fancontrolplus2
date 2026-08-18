@@ -43,6 +43,10 @@ plugin="fancontrolplus2"
 custom="${custom:-$(basename "$cfg_file" .cfg)}"
 controller_enable="${controller}_enable"
 
+# syslog 开关只在启动时读一次，避免每轮 grep 一次 cfg
+log_enable=$(grep '^syslog=' "$cfg_file" | cut -d'"' -f2)
+[[ -z "$log_enable" ]] && log_enable="1"
+
 # 推导 RPM 读取路径
 if [[ "$controller" =~ pwm([0-9]+)$ ]]; then
   fan_index="${BASH_REMATCH[1]}"
@@ -68,6 +72,7 @@ while true; do
     else
       delta=$((cpu_temp - cpu_min_temp))
       range=$((cpu_max_temp - cpu_min_temp))
+      (( range == 0 )) && range=1
       cpu_pwm_val=$((pwm + delta * (max - pwm) / range))
     fi
   else
@@ -142,6 +147,7 @@ while true; do
       else
         delta=$((disk_max - low))
         range=$((high - low))
+        (( range == 0 )) && range=1
         disk_pwm_val=$((pwm + delta * (max - pwm) / range))
       fi
     fi
@@ -207,7 +213,6 @@ while true; do
       fi
 
       label="[${custom}]"
-      log_enable=$(grep '^syslog=' "$cfg_file" | cut -d'"' -f2)
       if [[ -z "$log_enable" || "$log_enable" == "1" ]]; then
         logger -t fancontrolplus2 "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
       fi

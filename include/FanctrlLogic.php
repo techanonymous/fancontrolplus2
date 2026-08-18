@@ -1,6 +1,7 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+ini_set('display_errors', 0);
+ini_set('log_errors', 1);
 
 $plugin  = 'fancontrolplus2';
 $docroot = $docroot ?? $_SERVER['DOCUMENT_ROOT'] ?: '/usr/local/emhttp';
@@ -40,12 +41,18 @@ function scan_dir($dir) {
 
 $op = $_GET['op'] ?? $_POST['op'] ?? '';
 
+// 校验 PWM 路径：必须是真正的 hwmon PWM 节点。
+// 未加此限制时，identify 会把 0/255 写进任何 GET 参数指定的既有文件。
+function is_valid_pwm_path(string $path): bool {
+  return (bool)preg_match("#^/sys/devices/.+/pwm\d+$#", $path) && is_file($path);
+}
+
 switch ($op) {
     
   case 'identify':
     $pwm  = $_GET['pwm']  ?? '';
     $mode = $_GET['mode'] ?? 'pause';  // 默认 pause
-    if (is_file($pwm)) {
+    if (is_valid_pwm_path($pwm)) {
       $original_pwm  = trim(@file_get_contents($pwm));
       $pwm_enable    = $pwm . "_enable";
       $original_mode = is_file($pwm_enable) ? trim(@file_get_contents($pwm_enable)) : '2';
@@ -102,13 +109,18 @@ switch ($op) {
       break;
     }
 
+    if (!preg_match("#^/sys/devices/.+/pwm\d+$#", $pwm)) {
+      json_response(["status" => "error", "message" => "Invalid PWM path"]);
+      break;
+    }
+
     // 空label表示删除
     if ($label === '') {
       $new_lines = [];
       foreach ($lines as $line) {
         if (strpos($line, "$pwm=") !== 0) $new_lines[] = $line;
       }
-      file_put_contents($label_file, implode("\n", $new_lines) . "\n");
+      file_put_contents($label_file, implode("\n", $new_lines) . "\n", LOCK_EX);
       json_response(['status' => 'ok', 'message' => 'Label removed']);
       break;
     }
@@ -122,7 +134,7 @@ switch ($op) {
       }
     }
     if (!$found) $lines[] = "$pwm=$label";
-    file_put_contents($label_file, implode("\n", $lines) . "\n");
+    file_put_contents($label_file, implode("\n", $lines) . "\n", LOCK_EX);
     json_response(['status' => 'ok', 'message' => 'Label saved']);
     break;
   
@@ -163,7 +175,7 @@ switch ($op) {
     sas_min_temp=""
     sas_max_temp=""
     INI
-    );
+    , LOCK_EX);
 
     require_once "$docroot/plugins/$plugin/include/FanBlockRender.php";
     $cfg = parse_ini_file($temp_file);
@@ -185,6 +197,12 @@ switch ($op) {
       $cfg_file = basename($_POST['cfg']);
       $enabled = isset($_POST['enabled']) && $_POST['enabled'] == 1 ? 1 : 0;
 
+      // 只接受本插件自己的 cfg 文件名
+      if (!preg_match("/^fancontrolplus2_\w+\.cfg$/", $cfg_file)) {
+          echo json_encode(["status" => "error", "msg" => "Invalid config filename"]);
+          exit;
+      }
+
       $cfg_dir = "/boot/config/plugins/fancontrolplus2";
       $cfg_path = "$cfg_dir/$cfg_file";
 
@@ -200,7 +218,7 @@ switch ($op) {
           if (!$found) {
               $lines[] = 'syslog="' . $enabled . '"';
           }
-          file_put_contents($cfg_path, implode("\n", $lines) . "\n");
+          file_put_contents($cfg_path, implode("\n", $lines) . "\n", LOCK_EX);
           echo json_encode(['status' => 'ok']);
       } else {
           echo json_encode(['status' => 'error', 'msg' => 'Config file not found']);
@@ -209,6 +227,12 @@ switch ($op) {
 
   case 'delete':
     $file = basename($_POST['file'] ?? '');
+
+    // 只接受本插件自己的 cfg 文件名
+    if (!preg_match("/^fancontrolplus2_\w+\.cfg$/", $file)) {
+      json_response(["status" => "error", "message" => "Invalid filename"]);
+      break;
+    }
     $cfgpath = "/boot/config/plugins/$plugin/$file";
 
     if (is_file($cfgpath)) {
@@ -240,6 +264,7 @@ switch ($op) {
 
     foreach (glob("$cfg_dir/{$plugin}_*.cfg") as $file) {
       $cfg = parse_ini_file($file);
+      if ($cfg === false) continue;
       $name = trim($cfg['custom'] ?? '');
       $enabled = trim($cfg['service'] ?? '0') === '1';
 
@@ -289,7 +314,7 @@ switch ($op) {
     }
 
     if ($output !== "") {
-      file_put_contents("$cfg_dir/order.cfg", $output);
+      file_put_contents("$cfg_dir/order.cfg", $output, LOCK_EX);
       json_response(['status' => 'ok']);
     } else {
       error_log("[fancontrolplus2] ❌ Blocked invalid saveorder: " . print_r($order_raw, true));
@@ -361,7 +386,7 @@ switch ($op) {
       if (!$found) $lines[] = "__FCP_AIRFLOW__=" . ($enabled ? '1' : '0');
 
       @mkdir($cfg_dir, 0777, true);
-      file_put_contents($labels_file, implode("\n", $lines) . "\n");
+      file_put_contents($labels_file, implode("\n", $lines) . "\n", LOCK_EX);
 
       header('Content-Type: application/json; charset=utf-8');
       echo json_encode(['ok'=>1, 'enabled'=>$enabled ? 1 : 0]);

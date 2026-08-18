@@ -38,7 +38,7 @@ class OrderManager {
     }
 
     $content = implode("\n", $lines) . "\n";
-    return file_put_contents(self::$order_file, $content) !== false;
+    return file_put_contents(self::$order_file, $content, LOCK_EX) !== false;
   }
 
   public static function remove(string $filename): bool {
@@ -70,6 +70,6 @@ class OrderManager {
                 $out[] = $line;
             }
         }
-        file_put_contents($order_file, implode("\n", $out) . "\n");
+        file_put_contents($order_file, implode("\n", $out) . "\n", LOCK_EX);
     }
 }

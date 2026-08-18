@@ -197,7 +197,7 @@ foreach ($_POST['#file'] as $i => $file) {
       $old_path = $new_path;
   }
 
-  file_put_contents($old_path, "custom=\"$custom\"\n...");
+  file_put_contents($old_path, "custom=\"$custom\"\n...", LOCK_EX);
 
   // 校验 interval 合法性（必须为正整数）
   if (!ctype_digit($interval) || intval($interval) <= 0) {
