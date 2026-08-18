@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.18">
+<!ENTITY version "2026.08.18a">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/fancontrolplus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -22,6 +22,10 @@ This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.18a
+- Fixed: the Plugins page showed the entire project README as the plugin
+  description. The package now ships a short blurb instead.
 
 ###2026.08.18
 - First release of this fork.

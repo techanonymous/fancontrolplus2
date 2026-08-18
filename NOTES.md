@@ -262,6 +262,12 @@ The `.txz` must be built on Linux (unraid99 is fine). `git archive HEAD` is the
 source of truth — it honours `.gitattributes`, so the payload is LF regardless of
 the CRLF working tree on Windows.
 
+**The packaged `README.md` is not the project README.** `ShowPlugins.php` renders the
+whole of `plugins/<name>/README.md` through Markdown into the Plugins-page description
+cell, with no truncation - so the build copies `unraid/plugin-README.md` in as
+`README.md` instead. Shipping the project README made that row enormous (fixed in
+2026.08.18a).
+
 Package layout mirrors upstream's: `install/doinst.sh` plus
 `usr/local/emhttp/plugins/fancontrolplus2/`. `doinst.sh` chmods the scripts and
 symlinks `rc.fancontrolplus2` into `/etc/rc.d/`. Excluded from the payload:
