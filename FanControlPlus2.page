@@ -1188,7 +1188,7 @@ $(function() {
   });
 
   function refreshSyslogSettings() {
-    $('#syslog-settings-area').load('/Settings/fancontrolplus2 #syslog-settings-area > *');
+    $('#syslog-settings-area').load('/Settings/FanControlPlus2 #syslog-settings-area > *');
   }
 
   function saveSyslogSwitchState(cfgFile, checked) {

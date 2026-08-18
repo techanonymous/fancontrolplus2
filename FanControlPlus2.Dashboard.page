@@ -180,7 +180,7 @@ $mytiles[$pluginname]['column2'] = <<<EOT
         </span>
         <span class="tile-header-right">
           <span class="tile-header-right-controls">
-            <a href="/Settings/fancontrolplus2" title="Go to FanControl Plus 2 settings">
+            <a href="/Settings/FanControlPlus2" title="Go to FanControl Plus 2 settings">
               <i class="fa fa-fw fa-cog control"></i>
             </a>
         </span>
