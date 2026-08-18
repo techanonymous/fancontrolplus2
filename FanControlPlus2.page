@@ -1662,9 +1662,9 @@ $(function() {
       <p>The fan controller always calculates a target speed from each enabled temperature source, then applies the <strong>highest</strong> value to ensure sufficient cooling.</p>
 
       <ul style="margin: 6px 0 10px 16px;">
-        <li><strong>Only Disk enabled:</strong> Uses the highest temperature among the selected disks.</li>
-        <li><strong>Only CPU enabled:</strong> Uses the CPU temperature.</li>
-        <li><strong>Disk + CPU enabled:</strong> Calculates fan speed from both rules and applies whichever result is higher.</li>
+        <li><strong>Only one source enabled:</strong> that source alone sets the speed — for Disk, the highest temperature among the selected disks.</li>
+        <li><strong>Several enabled:</strong> each of Disk, CPU, IPMI and SAS maps <em>its own</em> temperature range to a speed, and the highest of those speeds wins. Note this is not simply the highest temperature: a 45°C disk on a 40–50°C range asks for more than a 60°C HBA on a 55–85°C range.</li>
+        <li><strong>None readable:</strong> the fan falls back to <em>Fan Speed on Idle</em>.</li>
       </ul>
 
       <p style="margin: 10px 0 6px 0; font-weight: bold;">Example:</p>

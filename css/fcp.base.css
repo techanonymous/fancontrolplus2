@@ -327,18 +327,6 @@ dt.containerSettingsDt {
 .cpu-label.disabled,
 .fcp-src-label.disabled { opacity: 0.5; }
 
-/* 温度源仲裁说明（每个 fan block 一条） */
-.fcp-src-note {
-  padding: 8px 0 2px;
-  font-size: 12px;
-  line-height: 1.5;
-  opacity: 0.8;
-}
-.fcp-src-note i {
-  margin-right: 4px;
-  color: var(--blue-800);
-}
-
 .subhead {
   font-weight: bold;
   font-size: 1.1rem;

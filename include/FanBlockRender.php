@@ -230,24 +230,6 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
         </tr>
         </tr>
 
-        <?php
-        // 仲裁说明：每个来源各自把自己的温度区间换算成 PWM，取最高的那个 PWM，
-        // 而不是取最高的温度 —— 区间不同，高温未必对应高转速。
-        $src_names = ["Disk", "CPU"];
-        if (!empty($ipmi_sensors)) $src_names[] = "IPMI";
-        if (!empty($sas_sensors))  $src_names[] = "SAS";
-        ?>
-        <tr>
-          <td colspan="2" class="fcp-src-note">
-            <i class="fa fa-info-circle"></i>
-            Each enabled source (<?=implode(" / ", $src_names)?>) maps <em>its own</em>
-            temperature range to a fan speed. The fan then runs at the
-            <strong>highest speed any of them asks for</strong> &mdash; not simply the highest
-            temperature, since each source has its own range. If none can be read, the fan
-            falls back to <em>Fan Speed on Idle</em>.
-          </td>
-        </tr>
-
         <tr><td colspan="2" class="subhead">Disk Temperature Settings</td></tr>
 
         <!-- Include Disk(s) -->
