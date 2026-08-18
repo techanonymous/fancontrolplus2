@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.18c">
+<!ENTITY version "2026.08.18d">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -22,6 +22,13 @@ This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.18d
+- **Fixed:** the old settings URL went to a blank page. Renaming the page file in
+  2026.08.18b changed the route, so bookmarks - and any browser tab rendered
+  before updating - pointed at a route that no longer existed, and Unraid drew
+  the page shell with nothing in it. The old route now redirects to the new one.
+  The redirect carries no menu entry, so it does not reappear in Settings twice.
 
 ###2026.08.18c
 - **Interval is now in seconds**, minimum 10s (was whole minutes, minimum 60s).
@@ -220,10 +227,6 @@ fi
 <INLINE>
 <![CDATA[
 #!/bin/bash
-
-# 2026.08.18b: 设置页文件改名为 FanControlPlus2.page。清掉可能残留的旧文件，
-# 否则 Settings 里会同时出现新旧两个入口。
-rm -f /usr/local/emhttp/plugins/fancontrolplus2/fancontrolplus2.page
 
 # 注册 rc.fancontrolplus2 到 /etc/rc.d
 src="/usr/local/emhttp/plugins/fancontrolplus2/scripts/rc.fancontrolplus2"
