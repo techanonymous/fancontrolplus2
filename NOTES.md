@@ -191,3 +191,56 @@ temps, drive the Commander Pro through hwmon as before.
 `/usr/local/emhttp/plugins/<name>/` is **RAM** on Unraid, rebuilt from the `.txz` each
 boot — so rsyncing straight into the live tree is a free, reversible dev loop and a
 reboot restores stock. No need to go through the `.plg` at all while iterating.
+
+---
+
+## 6. Reviewed: javi-dev/fanctrlplus (2026-08-18)
+
+Another fork of upstream — 37 commits ahead, 0 behind, last pushed 2026-06-14, no
+LICENSE. Focus: noise reduction, modern UI, security hardening.
+
+**Decision: cherry-pick, do not rebase onto it.** It keeps the `fanctrlplus` identity
+and overwrites the original (our coexistence rename would have to be redone), and its
+UI rewrite is the expensive half with the least payoff for us.
+
+### Worth taking
+
+1. **Security hardening — do this regardless.** Upstream's `identify` endpoint does
+   `if (is_file($pwm))` then writes `0`/`255` to that path: an arbitrary-file-write from
+   a GET parameter. **Our fork inherits it** (`include/FanctrlLogic.php`, `case 'identify'`).
+   Javi added a `^/sys/devices/.+/pwm\d+$` whitelist. Bundle also has: `display_errors`→0,
+   `LOCK_EX` on all 9 `file_put_contents` (we have none), `escapeshellarg` on the logger
+   call in `Common.php::log_migrate`, config-filename validation on `delete`/`setsyslog`,
+   and a `parse_ini_file === false` guard.
+2. Divide-by-zero guards on the CPU and disk curves (we only guarded the new sources).
+3. `log_enable` read once at startup instead of a `grep` every cycle.
+4. **2-segment piecewise curve** (`mid_temp`/`mid_pwm`) — good idea, see flaws below.
+
+### Two real bugs in their implementation — do not copy verbatim
+
+- **Hysteresis defeats the ramp.** The 2°C hysteresis check `continue`s *before* the PWM
+  ramp block, so once the ramp has been step-capped and temperature stabilises, PWM never
+  converges. Simulated: target 209, fan parks at 152 indefinitely under steady load.
+  Fixable in ~3 lines (only skip when `prev_pwm` already equals target).
+- **Piecewise defaults silently change existing curves.** `mid_temp="${mid_temp:-43}"` /
+  `mid_pwm="${mid_pwm:-100}"` apply to configs that predate the feature. With a 40% min
+  (PWM 102), `mid_pwm=100` sits *below* minimum so segment 1 ramps downward.
+
+Also: their piecewise is applied to the **disk branch only** — CPU is still single-linear.
+Our `fcp2_scale` is the better home for it: implement once, all four sources get it.
+
+### UI verdict — Tier 4 dropped
+
+Built a look-only preview on unraid99 (staged as plugin `fcpuipreview`, own config dir,
+no scripts, Identify guarded) and Alex compared it against the live plugin. Verdict: no
+visible improvement beyond the midpoint fields, fonts render small, light mode looks bad.
+
+Cause of the font issue: their CSS mixes two sizing systems — `--fcp-font-size: 0.9rem`
+resolving off the 16px browser root, alongside leftover hardcoded `13px`/`12px`/`16px`/
+`20px` rules. Nothing inherits from the Unraid theme. Their dark mode is the path they
+actually designed against; light themes (white/azure) get untuned `:root` defaults.
+
+**So: skip the 1,141-line `fcp.base.css` rewrite and the `chart-handler.js` rewrite.**
+Preview has been torn down; nothing remains on unraid99.
+
+The `javi` git remote is still configured locally for cherry-picking Tiers 1–3.
