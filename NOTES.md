@@ -7,17 +7,26 @@ Working journal for this fork. Not shipped to users; the user-facing docs are in
 
 ## Where things stand (2026-08-18)
 
-All work is **pushed to `origin/main`**. The repo is public at
-<https://github.com/techanonymous/fancontrolplus2>, MIT licensed (and detected as MIT
-by GitHub), with description and topics set.
+**Released: `2026.08.18`** — the first installable build of this fork. Pushed to
+<https://github.com/techanonymous/fancontrolplus2>, MIT licensed, description and
+topics set. Run `git log --oneline` for the commit history.
 
-| Commit | What |
-|---|---|
-| `6e95703` | Rebrand fork as fancontrolplus2 |
-| `467e23a` | Add IPMI and SAS controller temperature sources |
-| `f8f7abf` | Add dev notes / working journal |
-| `535bbea` | Add MIT licence and rewrite project docs for the fork |
-| `ff1bcd0` | Keep LICENSE as verbatim MIT, move provenance to NOTICE |
+### Agreed plan: ship in small increments, a release after each step
+
+| Step | What | Status |
+|---|---|---|
+| Tier 1 | Security hardening + correctness fixes (from the javi review) | **done** |
+| — | Release | **done — `2026.08.18`** |
+| Tier 2 | 2-segment piecewise curve, via `fcp2_scale`, all four sources | next |
+| — | Release | |
+| Tier 3 | Hysteresis + PWM ramping, with the convergence bug fixed | |
+| — | Release | |
+| Loose ends | Chart live-crosshair for four sources; verify the older storcli path | |
+| — | Release | |
+
+Rationale for the order: Tier 1 is pure downside-removal with no design decisions,
+so it ships first; the release after it makes the fork actually installable, which
+everything else then builds on.
 
 Nothing is installed on any server. The feature was tested on unraid99 with staged
 copies in `/tmp` and a fake PWM target, and every artifact was removed afterwards —
@@ -244,3 +253,35 @@ actually designed against; light themes (white/azure) get untuned `:root` defaul
 Preview has been torn down; nothing remains on unraid99.
 
 The `javi` git remote is still configured locally for cherry-picking Tiers 1–3.
+
+---
+
+## 7. How to build a release
+
+The `.txz` must be built on Linux (unraid99 is fine). `git archive HEAD` is the
+source of truth — it honours `.gitattributes`, so the payload is LF regardless of
+the CRLF working tree on Windows.
+
+Package layout mirrors upstream's: `install/doinst.sh` plus
+`usr/local/emhttp/plugins/fancontrolplus2/`. `doinst.sh` chmods the scripts and
+symlinks `rc.fancontrolplus2` into `/etc/rc.d/`. Excluded from the payload:
+`NOTES.md`, `unraid/`, `ca_profile.xml`, `FanControlPlus2.xml`, `deprecated/`,
+`.gitattributes`.
+
+Sequence, which matters:
+
+1. Bump `<!ENTITY version>` in `unraid/fancontrolplus2.plg` and add a `###<version>`
+   CHANGES entry.
+2. Build the `.txz` from `git archive HEAD`.
+3. Take the md5 of the built file and put it in `<!ENTITY MD5>`.
+4. Commit, push, then `gh release create v<version>` with the `.txz` attached.
+
+The tag must be `v<version>` and the asset must be named
+`fancontrolplus2-<version>.txz`, because the `.plg` `<URL>` is built from the
+`&version;` entity. Get either wrong and Unraid downloads a 404.
+
+`&MD5;` is a gate, not a checksum for show: if it does not match the file already on
+the flash, the `.plg` deletes it and re-downloads. See [[unraid-plugin-lifecycle]].
+
+Version numbers are date-based (`YYYY.MM.DD`). Upstream uses semver (1.3.3) and this
+is a different plugin name, so there is no comparison between the two.
