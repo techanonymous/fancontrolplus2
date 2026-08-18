@@ -19,19 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----------------------------------------------------------------------------
-Upstream provenance
----------------------------------------------------------------------------
-
-This project is a fork of FanCtrl Plus by ck9393:
-
-    https://github.com/ck9393/fanctrlplus
-
-The upstream repository is published without a LICENSE file, so no explicit
-licence terms were granted for the original code. The MIT grant above is
-offered for the changes made in this fork; the original portions remain the
-work and the copyright of ck9393, under whatever terms he chooses to apply.
-
-If you are ck9393 and would like the licensing of this fork changed, or the
-fork taken down, please open an issue and it will be actioned.

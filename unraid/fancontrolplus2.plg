@@ -20,7 +20,7 @@
 **Fork of FanCtrl Plus by ck9393** — all credit for the plugin goes to him.
 This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
-original. Fork changes are MIT licensed; see the repository LICENSE.
+original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
 
 ###&version;

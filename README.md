@@ -110,13 +110,12 @@ Support / issues: <https://github.com/techanonymous/fancontrolplus2/issues>
 
 ## 📄 Licence
 
-The changes made in this fork are released under the **MIT Licence** — see
-[LICENSE](LICENSE).
+The changes made in this fork are released under the **MIT Licence** — see [LICENSE](LICENSE).
 
-The upstream project is published without a licence file, so no explicit terms were
-granted for the original code. The MIT grant covers this fork's contributions; the
-original portions remain ck9393's work under whatever terms he chooses. See the
-provenance note in [LICENSE](LICENSE) for the full position.
+Upstream is published **without a licence file**, so no explicit terms were granted for
+the original code. The MIT grant covers this fork's contributions only; the original
+portions remain ck9393's work under whatever terms he chooses, and nothing here purports
+to relicense them. The full position is in [NOTICE](NOTICE).
 
 ---
 

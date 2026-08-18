@@ -1,0 +1,24 @@
+# NOTICE — upstream provenance
+
+This project is a fork of **FanCtrl Plus** by **ck9393**:
+
+    https://github.com/ck9393/fanctrlplus
+
+Essentially all of the plugin — the control daemon, the web UI, the dashboard
+tiles, the disk and CPU temperature handling — is ck9393's work. This fork adds
+IPMI baseboard sensors and SAS/HBA controller temperature as extra per-fan
+temperature sources, and renames the plugin so it installs alongside the
+original rather than over it.
+
+## On licensing
+
+The upstream repository is published **without a LICENSE file**, so no explicit
+licence terms were granted for the original code.
+
+The MIT grant in [LICENSE](LICENSE) is offered for the changes made in this
+fork. The original portions remain the work and the copyright of ck9393, under
+whatever terms he chooses to apply, and the MIT grant here cannot and does not
+purport to relicense them.
+
+If you are ck9393 and would like the licensing of this fork changed, or the
+fork taken down, please open an issue and it will be actioned.
