@@ -168,7 +168,7 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
 
         <tr>
           <td class="fcp-help-cursor"
-              title="Fan speed used only when NO temperature source can be read at all &mdash; every selected disk spun down, or the enabled sensors unreadable, or no source enabled.&#10;&#10;This is NOT the speed when temperatures are simply low: below the Low Temp the fan runs at the Min value of Fan Speed Range.&#10;&#10;Must be &le; that Min value. Default 0% = completely stopped.">
+              title="Fan speed used only when NO temperature source can be read at all &mdash; every selected disk spun down, or the enabled sensors unreadable, or no source enabled.&#10;&#10;This is NOT the speed when temperatures are simply low: below the Low Temp the fan runs at the Min value of Fan Speed Range.&#10;&#10;You may set this ABOVE the Min &mdash; e.g. 100% &mdash; to fail safe when a sensor stops responding. Default 0% = completely stopped.">
             Fan Speed on Idle / Unreadable:
           </td>
           <td>

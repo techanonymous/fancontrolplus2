@@ -65,24 +65,16 @@ foreach ($_POST['#file'] as $i => $file) {
   $idle_percent_val = preg_replace('/[^0-9]/', '', $idle_percent_raw);
   $idle_percent     = ($idle_percent_val !== '' && is_numeric($idle_percent_val)) ? intval($idle_percent_val) : 0;
   $idle_percent     = max(0, min(100, $idle_percent));
-
-  // 2) 已有的最小值（“Min Speed”）就是 pwm_percent
-  if ($idle_percent > $pwm_percent) {
-    ob_clean();
-    echo json_encode([
-      'status'  => 'error',
-      'message' => "Idle Speed (%) must be ≤ Min Speed (%). (Block #".($i+1).")",
-      'block'   => $i
-    ]);
-    exit;
-  }
+  // 刻意不再要求 idle <= Min。「读不到温度」可以是无害的（磁盘全部休眠），
+  // 也可以是失去可见性（传感器读不出来）；后者用户往往希望保守地吹到最大。
+  // 由用户自己决定，这里只夹到 [0, 100]。
 
   // 3) 百分比 → 绝对 PWM（你的体系按 255 做基准）
   $idle_abs = (int) round($idle_percent * 255 / 100);
 
-  // 4) 夹到 [0, $pwm]（双保险；保存层已拦，但再保一次）
-  if ($idle_abs > $pwm) $idle_abs = $pwm;
-  if ($idle_abs < 0)    $idle_abs = 0;
+  // 只夹到 [0, max]：允许高于 Min，这正是「传感器读不到就吹满」的用法。
+  if ($idle_abs > $max_pwm) $idle_abs = $max_pwm;
+  if ($idle_abs < 0)        $idle_abs = 0;
 
   // CPU fallback
   $cpu_enable = $_POST['cpu_enable'][$i] ?? '0';

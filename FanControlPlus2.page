@@ -1131,10 +1131,9 @@ $(function() {
         return false;
       }
 
-      if (!isNaN(idlePct) && !isNaN(pwmMin) && idlePct > pwmMin) {
-        alert(`Fan configuration "${name}": Idle Speed (%) cannot exceed Min Speed (%).`);
-        rangeValid = false; return false;
-      }
+      // No longer capped at Min: "no readable temperature" can mean disks are
+      // simply spun down (quieter is right) or an enabled sensor has failed
+      // (faster is right). That is the user's call, per fan.
     });
 
     if (!rangeValid) 
@@ -1640,6 +1639,12 @@ $(function() {
         runs at the <strong>Min</strong> of Fan Speed Range &mdash; so with a 40&ndash;100% range and a 10% idle
         value, a cool but readable sensor gives <strong>40%</strong>, not 10%. If you want a lower speed when
         cool, lower the Min rather than the idle value.</p>
+
+    <p>It is <strong>not</strong> capped at the Min any more. Setting it <em>above</em> the Min is a deliberate
+        fail-safe: if the sensor a fan depends on stops responding, the fan ramps up rather than idling down.
+        For a fan driven only by an IPMI or SAS sensor, 100% here means &quot;if I lose visibility, assume the
+        worst&quot;. For disk fans, where all-disks-spun-down is the normal idle case, a low value still makes
+        more sense.</p>
 
     <p><strong>Interval:</strong> How often the plugin reads temperatures and adjusts the fan,
         <strong>in seconds</strong>. The minimum is <strong>10&nbsp;seconds</strong> &mdash; below that there is

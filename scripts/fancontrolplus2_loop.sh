@@ -18,10 +18,7 @@ else
   fcp2_scale() { echo 0; }
 fi
 
-# ===== Fan Speed on Idle (ABS) =====
-# 最小档（绝对值）：cfg 里的 pwm 就是 Min
-min_pwm_abs="${pwm:-0}"
-
+# ===== Fan Speed on Idle / Unreadable (ABS) =====
 if [[ -n "${idle:-}" ]]; then
   idle_pwm_abs="$idle"
 elif [[ -n "${idle_percent:-}" ]]; then
@@ -34,10 +31,10 @@ fi
 (( idle_pwm_abs < 0 )) && idle_pwm_abs=0
 (( idle_pwm_abs > max )) && idle_pwm_abs="$max"
 
-# Idle 不高于 Min
-if (( idle_pwm_abs > min_pwm_abs )); then
-  idle_pwm_abs="$min_pwm_abs"
-fi
+# 刻意不再把 idle 夹到 Min 以下。
+# 「读不到温度」有两种含义，方向相反：磁盘全部休眠（无害，应该更安静）；
+# 已启用的传感器读不出来（失去可见性，应该保守地吹快一点）。
+# 由用户按每个风扇自己决定，所以这里只夹到 [0, max]。
 
 plugin="fancontrolplus2"
 custom="${custom:-$(basename "$cfg_file" .cfg)}"

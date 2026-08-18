@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.19b">
+<!ENTITY version "2026.08.19c">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -22,6 +22,18 @@ This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.19c
+- **Fan Speed on Idle / Unreadable can now be set ABOVE the Min speed**, up to Max.
+  It was capped at the Min in three places (browser, save handler and the daemon
+  itself), which made a fail-safe impossible.
+- Why: "no readable temperature" means two opposite things. Disks simply spun down
+  is harmless and wants a quiet fan. An enabled sensor that stopped responding means
+  you have lost visibility, and many people would rather the fan ramp up. That is now
+  the user's choice, per fan.
+- A fan driven only by an IPMI or SAS sensor can set 100% here: lose the sensor,
+  assume the worst. Disk fans, where all-spun-down is the normal idle case, still
+  want a low value.
 
 ###2026.08.19b
 - Renamed **Fan Speed on Idle** to **Fan Speed on Idle / Unreadable**, because it only
