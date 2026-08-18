@@ -1,3 +1,9 @@
+| Tier 2 | 2-segment piecewise curve, via `fcp2_scale`, all four sources | deferred |
+| — | Release | |
+| Tier 3 | Hysteresis + asymmetric slew + interval in seconds (10s floor) | **done** |
+| — | Release | **done — `2026.08.18c`** |
+| Loose ends | Chart live-crosshair for four sources; verify the older storcli path | next |
+| — | Release | |
 # Dev notes — FanControl Plus 2
 
 Working journal for this fork. Not shipped to users; the user-facing docs are in
@@ -15,14 +21,12 @@ topics set. Run `git log --oneline` for the commit history.
 
 | Step | What | Status |
 |---|---|---|
-| Tier 1 | Security hardening + correctness fixes (from the javi review) | **done** |
-| — | Release | **done — `2026.08.18`** |
-| Tier 2 | 2-segment piecewise curve, via `fcp2_scale`, all four sources | next |
-| — | Release | |
-| Tier 3 | Hysteresis + PWM ramping, with the convergence bug fixed | |
-| — | Release | |
-| Loose ends | Chart live-crosshair for four sources; verify the older storcli path | |
-| — | Release | |
+| Tier 1 | Security hardening + correctness fixes (from the javi review) | **done — `2026.08.18`** |
+| Fixes | Plugin-page description, encrypted-drive duplicates | **done — `2026.08.18a`** |
+| Fixes | Settings menu position, source-arbitration note | **done — `2026.08.18b`** |
+| Tier 3 | Hysteresis + asymmetric slew + interval in seconds (10s floor) | **done — `2026.08.18c`** |
+| Tier 2 | 2-segment piecewise curve, via `fcp2_scale`, all four sources | **deferred** — see below |
+| Loose ends | Chart live-crosshair for four sources; verify the older storcli path | next |
 
 Rationale for the order: Tier 1 is pure downside-removal with no design decisions,
 so it ships first; the release after it makes the fork actually installable, which
@@ -291,3 +295,56 @@ the flash, the `.plg` deletes it and re-downloads. See [[unraid-plugin-lifecycle
 
 Version numbers are date-based (`YYYY.MM.DD`). Upstream uses semver (1.3.3) and this
 is a different plugin name, so there is no comparison between the two.
+
+---
+
+## 8. Tier 3 as built, and why Tier 2 got deferred
+
+### The anti-oscillation design
+
+Two independent mechanisms, both per-fan configurable:
+
+- **Hysteresis** (`hysteresis`, default 2 °C) gates whether a *new target* is computed:
+  only when the temperature has moved that far from the temperature last acted on.
+- **Asymmetric slew** (`slew_down` default 8 PWM/tick, `slew_up` default 0 = unlimited)
+  gates how fast the fan may *approach* that target. Up is never limited, so a real
+  thermal event is answered immediately; down glides.
+
+**The separation is the whole point.** javi's version returns early from the entire
+cycle when hysteresis trips, so once its ramp has been step-capped and the temperature
+settles, the fan parks short of target indefinitely. Verified here on real hardware that
+a fan still ramps on a tick where the temperature has not changed at all.
+
+**`intended_pwm` is tracked separately from the value actually written**, so steps
+smaller than the 5-PWM write threshold accumulate rather than being discarded. Without
+this, any slew smaller than the threshold silently stalls the fan wherever it got to —
+measured that directly: a 4 PWM/tick limit left the fan stuck at 93% forever.
+
+### Measurements that drove the design
+
+VRM/DIMM curve (20–100% over 45–70 °C) at 10s polling, 5-minute trace:
+
+| strategy | changes | fan movement | lag to full speed |
+|---|---|---|---|
+| raw | 29 | 187% | 30s |
+| EMA smoothing (N=4) | 17 | 96% | **60s** |
+| slew only | 27 | 132% | 30s |
+| **hysteresis 2 °C + slew down 8** | **11** | **73%** | **30s** |
+
+**EMA / low-pass smoothing was rejected**: it costs 30s of lag and does not even beat
+hysteresis on change count. It delays everything equally, including the rise that short
+intervals exist to catch. Hysteresis filters only jitter.
+
+### Curve steepness matters more than any of this
+
+`Drives_mid` was `low=38 high=45` — a 7 °C span, and `smartctl` reports whole degrees,
+so only 8 speeds are reachable and **each 1 °C is a 13% jump**. Widening a range is the
+cheapest smoothing available and needs no code: `35–55` makes each degree ~4.5%.
+
+### Why Tier 2 (piecewise curve) is deferred
+
+Its purpose was noise reduction, and Tier 3 plus a wider range addresses that more
+directly. It is still worth doing for the "quiet below X, aggressive above X" shape, but
+it is no longer urgent. When it happens it belongs in `fcp2_scale`, so all four sources
+get it — javi's is disk-only — and the midpoint must default to the linear midpoint so
+existing configs are unchanged unless deliberately altered.
