@@ -19,3 +19,9 @@ scripts/rc.* text eol=lf
 
 *.png  binary
 *.woff binary
+
+# NOTE: the settings page is FanControlPlus2.page. The pre-2026.08.18b route is
+# served by a shim that must be named fancontrolplus2.page in the PACKAGE, but it
+# cannot be stored under that name here - Windows checkouts are case-insensitive
+# and the two would be the same file. It lives at unraid/legacy-route.page and is
+# renamed by the build.

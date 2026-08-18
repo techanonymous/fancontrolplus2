@@ -1,0 +1,31 @@
+Title="FanControl Plus 2"
+---
+<?php
+/* Redirect shim for the settings route used before 2026.08.18b.
+ *
+ * Renaming the page file to FanControlPlus2.page (so the Settings menu sorts it
+ * under F - Unraid orders that menu by .page filename, case-sensitively) changed
+ * the route. Bookmarks, and any browser tab rendered before the update, pointed
+ * at a route that no longer resolved: the dispatcher does $site[basename($path)],
+ * so an unknown name yields the page shell and no content - a blank page with no
+ * explanation.
+ *
+ * NO Menu= key, deliberately. build_pages() registers every .page in $site so the
+ * route resolves, but find_pages() skips anything without a Menu, so this does not
+ * reappear in the Settings menu - which was the entire point of the rename. Unraid
+ * ships several pages this way (SMBSharesAdd.page, AddContainer.page).
+ *
+ * Stored as unraid/legacy-route.page and renamed to fancontrolplus2.page at build
+ * time. It cannot be kept under its real name: the checkout is on Windows, which
+ * is case-insensitive, so fancontrolplus2.page and FanControlPlus2.page are the
+ * SAME FILE there and one silently clobbers the other.
+ */
+?>
+<script>location.replace('/Settings/FanControlPlus2' + window.location.search);</script>
+<noscript>
+  <meta http-equiv="refresh" content="0;url=/Settings/FanControlPlus2">
+</noscript>
+<p style="padding:16px">
+  This page has moved to <a href="/Settings/FanControlPlus2">Settings &rarr; FanControl Plus 2</a>.
+  Please update your bookmark.
+</p>
