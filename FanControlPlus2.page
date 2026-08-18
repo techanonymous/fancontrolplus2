@@ -550,7 +550,6 @@ $(function() {
 
   function updateIdleDisplay(i) {
     const $idleInput = $(`#idle_percent_input_${i}`);
-    const $minInput  = $(`#pwm_percent_input_${i}`);
 
     const rawIdle = stripUnit($idleInput.val());
     if (!rawIdle) {
@@ -560,16 +559,12 @@ $(function() {
 
     let idleVal = Math.min(100, Math.max(0, parseInt(rawIdle, 10)));
 
-    // 软夹到 Min（若 Min 有值）
-    const rawMin = stripUnit($minInput.val());
-    if (rawMin) {
-      const minVal = Math.min(100, Math.max(0, parseInt(rawMin, 10)));
-      if (!Number.isNaN(minVal)) idleVal = Math.min(idleVal, minVal);
-    }
+    // No clamp to Min here. Setting idle ABOVE Min is the deliberate fail-safe case
+    // (sensor unreadable -> ramp up), so the field must accept it as you type.
 
     $idleInput.val(`${idleVal}%`);
     const pwmIdle = Math.round(idleVal * 255 / 100);
-    $idleInput.attr('title', `Idle speed: ${idleVal}% = ${pwmIdle} PWM`);
+    $idleInput.attr('title', `Used only when no sensor can be read: ${idleVal}% = ${pwmIdle} PWM`);
   }
 
   function bindIdleEvents() {
