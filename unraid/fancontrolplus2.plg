@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.18e">
+<!ENTITY version "2026.08.18f">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -23,9 +23,15 @@ extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
 
+###2026.08.18f
+- **Fixed:** an unescaped ampersand in the 2026.08.18e changelog made the whole .plg
+  invalid XML, so Unraid could not read its version and every install reported
+  "up-to-date" instead of offering the update. If you are stuck on 2026.08.18c or
+  earlier, reinstall from the plugin URL once and updates will work again.
+
 ###2026.08.18e
 - Removed the temperature-source note from each fan block: it stretched the block
-  wider than the column, and Help & Tips already explains the same thing. That
+  wider than the column, and Help &amp; Tips already explains the same thing. That
   section is now updated to cover all four sources instead of just Disk and CPU.
 
 ###2026.08.18d
