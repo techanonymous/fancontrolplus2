@@ -53,6 +53,9 @@ max="255"
 low="40"
 high="60"
 interval="2"
+interval_sec="60"
+hysteresis="2"
+slew_down="8"
 disks=""
 syslog="1"
 cpu_enable="0"
@@ -476,7 +479,9 @@ $(function() {
           { selector: 'input[id^="ipmi_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
           { selector: 'input[id^="sas_low_temp_input_"]', unit: '°C', min: 1, max: 110 },
           { selector: 'input[id^="sas_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
-          { selector: 'input[id^="interval_input_"]', unit: ' min', min: 1, max: 60 }
+          { selector: 'input[id^="interval_input_"]', unit: ' s', min: 10, max: 3600 },
+          { selector: 'input[id^="hysteresis_input_"]', unit: '°C', min: 0, max: 20 },
+          { selector: 'input[id^="slewdown_input_"]', unit: '%', min: 0, max: 100 }
         ]);
 
         $html.find('select[id^="cpu-enable-"]').each(function () {
@@ -632,7 +637,9 @@ $(function() {
       { selector: 'input[id^="ipmi_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
       { selector: 'input[id^="sas_low_temp_input_"]', unit: '°C', min: 1, max: 110 },
       { selector: 'input[id^="sas_high_temp_input_"]', unit: '°C', min: 1, max: 125 },
-      { selector: 'input[id^="interval_input_"]', unit: ' min', min: 1, max: 60 }
+      { selector: 'input[id^="interval_input_"]', unit: ' s', min: 10, max: 3600 },
+          { selector: 'input[id^="hysteresis_input_"]', unit: '°C', min: 0, max: 20 },
+          { selector: 'input[id^="slewdown_input_"]', unit: '%', min: 0, max: 100 }
     ]);
     loadPWMOptions();
     bindPWMChangeHandlers();
@@ -902,7 +909,9 @@ $(function() {
       idle_percent: stripUnit($block.find('input[name^="idle_percent["]').val() || '0'),
       low: stripUnit($block.find('input[name^="low["]').val()),
       high: stripUnit($block.find('input[name^="high["]').val()),
-      interval: stripUnit($block.find('input[name^="interval["]').val()),
+      interval_sec: stripUnit($block.find('input[name^="interval_sec["]').val()),
+      hysteresis: stripUnit($block.find('input[name^="hysteresis["]').val()),
+      slew_down_pct: stripUnit($block.find('input[name^="slew_down_pct["]').val()),
       disks: $block.find('select[name^="disks["]').val(),
       cpu_enable: $block.find('select[name^="cpu_enable["]').val(),
       cpu_sensor: $block.find('select[name^="cpu_sensor["]').val(),
@@ -928,7 +937,9 @@ $(function() {
         idle_percent: stripUnit($block.find('input[name^="idle_percent["]').val() || '0'),
         low: stripUnit($block.find('input[name^="low["]').val()),
         high: stripUnit($block.find('input[name^="high["]').val()),
-        interval: stripUnit($block.find('input[name^="interval["]').val()),
+        interval_sec: stripUnit($block.find('input[name^="interval_sec["]').val()),
+        hysteresis: stripUnit($block.find('input[name^="hysteresis["]').val()),
+        slew_down_pct: stripUnit($block.find('input[name^="slew_down_pct["]').val()),
         disks: $block.find('select[name^="disks["]').val(),
         cpu_enable: $block.find('select[name^="cpu_enable["]').val(),
         cpu_sensor: $block.find('select[name^="cpu_sensor["]').val(),

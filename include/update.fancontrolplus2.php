@@ -25,7 +25,19 @@ foreach ($_POST['#file'] as $i => $file) {
   $old_file = basename($file);
   $controller = $_POST['controller'][$i] ?? '';
   $custom = trim($_POST['custom'][$i] ?? '');
-  $interval = $_POST['interval'][$i] ?? '';
+  // ===== 周期与抗震荡 =====
+  // interval_sec 是权威值；interval（分钟）仍写出，供任何仍按分钟读取的东西使用。
+  $isec = preg_replace('/[^0-9]/', '', $_POST['interval_sec'][$i] ?? '');
+  $interval_sec = is_numeric($isec) ? intval($isec) : 60;
+  $interval     = max(1, (int)round($interval_sec / 60));
+
+  $hys = preg_replace('/[^0-9]/', '', $_POST['hysteresis'][$i] ?? '');
+  $hysteresis = is_numeric($hys) ? max(0, min(20, intval($hys))) : 2;
+
+  // UI 用百分比，落盘用 PWM/轮（0 = 不限速）
+  $sdp = preg_replace('/[^0-9]/', '', $_POST['slew_down_pct'][$i] ?? '');
+  $slew_down_pct = is_numeric($sdp) ? max(0, min(100, intval($sdp))) : 3;
+  $slew_down     = (int)round($slew_down_pct * 255 / 100);
   $expected_file = $plugin . '_' . $custom . '.cfg';
   $old_path = "$cfgpath/$old_file";
   $new_path = "$cfgpath/$expected_file";
@@ -199,12 +211,12 @@ foreach ($_POST['#file'] as $i => $file) {
 
   file_put_contents($old_path, "custom=\"$custom\"\n...", LOCK_EX);
 
-  // 校验 interval 合法性（必须为正整数）
-  if (!ctype_digit($interval) || intval($interval) <= 0) {
+  // 10 秒下限：一轮 smartctl 就要几百毫秒，比这更快没有意义
+  if ($interval_sec < 10 || $interval_sec > 3600) {
     ob_clean();
-    echo json_encode(['status' => 'error', 'message' => "Interval cannot be empty or 0 (recommended: 1–5 min)."]);
+    echo json_encode(['status' => 'error', 'message' => "Interval must be between 10 and 3600 seconds."]);
     exit;
-  } 
+  }
 
   // === 临时文件：以 custom 命名为正式文件 ===
   if (strpos($old_file, 'temp_') !== false && !empty($controller)) {
@@ -236,7 +248,10 @@ foreach ($_POST['#file'] as $i => $file) {
     'idle'       => (string)$idle_abs,
     'low'        => $low_temp,
     'high'       => $high_temp,
-    'interval'   => $_POST['interval'][$i] ?? '',
+    'interval'     => $interval,
+    'interval_sec' => $interval_sec,
+    'hysteresis'   => $hysteresis,
+    'slew_down'    => $slew_down,
     'disks'      => isset($_POST['disks'][$i]) ? implode(',', $_POST['disks'][$i]) : '',
     'syslog'     => $syslog_val,
     'cpu_enable'    => $cpu_enable,

@@ -55,7 +55,35 @@ else
   fan_path=""
 fi
 
-prev_pwm=-1
+# ===== 轮询周期（秒）=====
+# interval_sec 是权威值；老配置只有 interval（分钟），按分钟换算。
+# 10 秒下限：再快也没有意义，smartctl 一轮就要几百毫秒。
+period="${interval_sec:-$(( ${interval:-2} * 60 ))}"
+[[ "$period" =~ ^[0-9]+$ ]] || period=60
+(( period < 10 )) && period=10
+
+# 缓存 TTL 必须短于本风扇的周期，否则会拿到自己上一轮留下的读数。
+# 跟随周期自适应：10s 的风扇给 5s，5 分钟的风扇给 20s。
+FCP2_IPMI_TTL=$(( period / 2 )); (( FCP2_IPMI_TTL < 3 )) && FCP2_IPMI_TTL=3; (( FCP2_IPMI_TTL > 20 )) && FCP2_IPMI_TTL=20
+FCP2_SAS_TTL=$((  period / 2 )); (( FCP2_SAS_TTL  < 4 )) && FCP2_SAS_TTL=4;  (( FCP2_SAS_TTL  > 30 )) && FCP2_SAS_TTL=30
+
+# ===== 抗震荡 =====
+# hysteresis：温度相对「上次真正采纳的温度」变化不足这么多度，就沿用旧目标。
+#   它只挡住「重新计算目标」，不挡住向目标滑行 —— 否则温度一稳定，风扇就会
+#   永远卡在半路上到不了目标转速。
+# slew_down / slew_up：每轮允许的 PWM 变化上限，0 = 不限。向上默认不限（安全
+#   与响应速度优先），向下默认每轮 8，避免掉速时一大跳。
+hysteresis="${hysteresis:-2}"
+slew_down="${slew_down:-8}"
+slew_up="${slew_up:-0}"
+[[ "$hysteresis" =~ ^[0-9]+$ ]] || hysteresis=2
+[[ "$slew_down"  =~ ^[0-9]+$ ]] || slew_down=8
+[[ "$slew_up"    =~ ^[0-9]+$ ]] || slew_up=0
+
+prev_pwm=-1        # 最后一次真正写进 sysfs 的值
+intended_pwm=-1    # 限速后的意图值：小步会在这里累积，直到够格写出去
+target_pwm=-1      # 经迟滞门控后的目标
+acted_temp=-9999   # 上次采纳目标时的温度
 
 while true; do
   # === CPU 温度 ===
@@ -186,40 +214,76 @@ while true; do
   # 每轮都写入 Dashboard 缓存
   echo "${max_temp} ${temp_origin}" > "/var/tmp/fancontrolplus2/temp_${plugin}_${custom}"
 
-  # === 若 PWM 有明显变化，或首次 ===
-  if [[ "$prev_pwm" == -1 ]]; then
+  # ===== 迟滞：决定是否采纳新目标 =====
+  # 温度相对「上次采纳时」变化够大才重算目标，否则沿用旧目标。
+  # 关键：这只挡住「换目标」，不挡住下面继续向目标滑行。
+  if [[ ! "$max_temp" =~ ^[0-9]+$ ]] || (( hysteresis <= 0 )) || (( acted_temp == -9999 )); then
+    accept=1
+  else
+    dt=$(( max_temp - acted_temp )); (( dt < 0 )) && dt=$(( -dt ))
+    if (( dt >= hysteresis )); then accept=1; else accept=0; fi
+  fi
+  if (( accept == 1 )); then
+    target_pwm=$pwm_val
+    [[ "$max_temp" =~ ^[0-9]+$ ]] && acted_temp=$max_temp
+  fi
+  (( target_pwm == -1 )) && target_pwm=$pwm_val
+
+  # ===== 限速：向目标滑行 =====
+  # intended_pwm 独立于「真正写出的值」累积，所以小于写入阈值的步进不会被丢弃，
+  # 攒够了自然写得出去 —— 「降速卡在半路再也下不来」正是没做这件事导致的。
+  if (( intended_pwm == -1 )); then
+    intended_pwm=$target_pwm
+  else
+    d=$(( target_pwm - intended_pwm ))
+    if (( d > 0 )); then
+      if (( slew_up > 0 && d > slew_up )); then
+        intended_pwm=$(( intended_pwm + slew_up ))
+      else
+        intended_pwm=$target_pwm
+      fi
+    elif (( d < 0 )); then
+      if (( slew_down > 0 && -d > slew_down )); then
+        intended_pwm=$(( intended_pwm - slew_down ))
+      else
+        intended_pwm=$target_pwm
+      fi
+    fi
+  fi
+
+  # ===== 写出 =====
+  # 变化够大才写；但若已经滑到目标却还差最后一小步没写，也补写一次。
+  do_write=0
+  if (( prev_pwm == -1 )); then
+    do_write=1
+  else
+    dp=$(( intended_pwm - prev_pwm )); (( dp < 0 )) && dp=$(( -dp ))
+    if (( dp >= 5 )); then
+      do_write=1
+    elif (( dp > 0 && intended_pwm == target_pwm )); then
+      do_write=1
+    fi
+  fi
+
+  slept=0
+  if (( do_write == 1 )); then
+    first=$(( prev_pwm == -1 ? 1 : 0 ))
     [[ -f "$controller_enable" ]] && echo 1 > "$controller_enable"
-    echo "$pwm_val" > "$controller"
-    sleep 4
+    echo "$intended_pwm" > "$controller"
+    sleep 4; slept=4
     if [[ -n "$fan_path" && -f "$fan_path" ]]; then
       rpm=$(cat "$fan_path")
     else
       rpm="?"
     fi
-
-    # 无条件写一次
     label="[${custom}]"
-    logger -t fancontrolplus2 "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
-    prev_pwm=$pwm_val
-  else
-    if (( pwm_val - prev_pwm >= 5 || prev_pwm - pwm_val >= 5 )); then
-      [[ -f "$controller_enable" ]] && echo 1 > "$controller_enable"
-      echo "$pwm_val" > "$controller"
-      sleep 4
-      if [[ -n "$fan_path" && -f "$fan_path" ]]; then
-        rpm=$(cat "$fan_path")
-      else
-        rpm="?"
-      fi
-
-      label="[${custom}]"
-      if [[ -z "$log_enable" || "$log_enable" == "1" ]]; then
-        logger -t fancontrolplus2 "$label Temp=${max_temp}°C $temp_origin → PWM=$pwm_val → RPM=$rpm"
-      fi
-
-      prev_pwm=$pwm_val
+    if (( first == 1 )) || [[ -z "$log_enable" || "$log_enable" == "1" ]]; then
+      logger -t fancontrolplus2 "$label Temp=${max_temp}°C $temp_origin → PWM=$intended_pwm → RPM=$rpm"
     fi
+    prev_pwm=$intended_pwm
   fi
 
-  sleep $((interval * 60))
+  # 写出后已经睡了 4 秒，从周期里扣掉，免得周期被悄悄拉长
+  rest=$(( period - slept )); (( rest < 1 )) && rest=1
+  sleep "$rest"
 done

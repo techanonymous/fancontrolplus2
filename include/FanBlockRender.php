@@ -24,6 +24,15 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
   $idle_abs = isset($cfg['idle']) && is_numeric($cfg['idle']) ? (int)$cfg['idle'] : 0;
   $idle_pct = round($idle_abs * 100 / 255) . '%';
 
+  // 周期：interval_sec 权威；老配置只有 interval（分钟）
+  $interval_sec = isset($cfg["interval_sec"]) && is_numeric($cfg["interval_sec"])
+                    ? max(10, (int)$cfg["interval_sec"])
+                    : max(10, (int)($cfg["interval"] ?? 2) * 60);
+  $hysteresis     = isset($cfg["hysteresis"]) && is_numeric($cfg["hysteresis"]) ? (int)$cfg["hysteresis"] : 2;
+  // 限速在 cfg 里是 PWM/轮，UI 用百分比更直观
+  $slew_down_abs  = isset($cfg["slew_down"]) && is_numeric($cfg["slew_down"]) ? (int)$cfg["slew_down"] : 8;
+  $slew_down_pct  = (int)round($slew_down_abs * 100 / 255);
+
   ob_start();
   ?>
   <div class="fan-block" data-index="<?=$i?>" data-file="<?=htmlspecialchars($cfg['file'])?>">
@@ -175,15 +184,15 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
 
         <!-- Interval -->
         <tr>
-          <td class="fcp-help-cursor" title="Check temperature and adjust fan speed every X minutes.">Interval:</td>
+          <td class="fcp-help-cursor" title="How often to read temperatures and adjust the fan, in seconds. 10s is the minimum. Use short intervals (10-30s) for fans cooling CPU, VRM, DIMMs or add-in cards, which heat quickly; disks change slowly, so 60-300s is plenty.">Interval:</td>
           <td>
             <input type="text"
                   id="interval_input_<?=$i?>"
-                  name="interval[<?=$i?>]"
-                  class="interval-input fcp-interval-input" 
+                  name="interval_sec[<?=$i?>]"
+                  class="interval-input fcp-interval-input"
                   inputmode="numeric"
-                  value="<?=htmlspecialchars(($cfg['interval'] ?? '') . ' min')?>"
-                  placeholder="Recommended: 1–5 min">
+                  value="<?=htmlspecialchars($interval_sec . ' s')?>"
+                  placeholder="10-3600 s">
 
             <span class="fancontrolplus2-interval-refresh fcp-runnow"
                   title="Manual Run: Read current temperature and set fan speed immediately"
@@ -191,6 +200,34 @@ function render_fan_block($cfg, $i, $pwms, $disks, $pwm_labels, $cpu_sensors, $i
               <span class="fa fa-refresh fcp-fs-13"></span> Run Now
             </span>
           </td>
+        </tr>
+
+        <!-- Anti-oscillation -->
+        <tr>
+          <td class="fcp-help-cursor" title="Ignore temperature changes smaller than this. Stops the fan hunting when a sensor jitters by a degree, without delaying a genuine sustained rise - a real change crosses the band immediately. 0 disables it.">Temp Hysteresis:</td>
+          <td>
+            <input type="text"
+                  id="hysteresis_input_<?=$i?>"
+                  name="hysteresis[<?=$i?>]"
+                  class="fcp-input-idle"
+                  inputmode="numeric"
+                  value="<?=htmlspecialchars($hysteresis . '°C')?>"
+                  placeholder="2°C">
+          </td>
+        </tr>
+
+        <tr>
+          <td class="fcp-help-cursor" title="Largest speed drop allowed per interval, as a percentage of full speed. Slowing down gradually is inaudible; dropping in one step is not. Speeding UP is never limited, so response to a real thermal event is unaffected. 0 disables it.">Ramp Down Limit:</td>
+          <td>
+            <input type="text"
+                  id="slewdown_input_<?=$i?>"
+                  name="slew_down_pct[<?=$i?>]"
+                  class="fcp-input-idle"
+                  inputmode="numeric"
+                  value="<?=htmlspecialchars($slew_down_pct . '%')?>"
+                  placeholder="3%">
+          </td>
+        </tr>
         </tr>
 
         <?php
