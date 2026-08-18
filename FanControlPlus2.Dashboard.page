@@ -206,6 +206,14 @@ $mytiles[$pluginname]['column2'] = <<<EOT
 EOT;
 ?>
 <script>
+(function() {
+// Scoped deliberately. Both this tile and the original FanCtrl Plus tile render on
+// the same Dashboard when both plugins are installed, and upstream declares
+// setTempCell() and refreshSingleFan() as globals - so whichever script parsed
+// last won, and this tile's temperature cell was being updated by the other
+// plugin's function (which targets its own tile id and silently does nothing here).
+// RPM and Status kept working only because they are set inline via tile.querySelector.
+// The sibling FcpAirflow tile already does this; the main tile did not.
 // 设置温度与来源。支持 *, --，以及无来源时用占位“-”
 function setTempCell(label, val, origin) {
   const tile = document.getElementById('fancontrolplus2-dashboard');
@@ -325,4 +333,5 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+})();
 </script>

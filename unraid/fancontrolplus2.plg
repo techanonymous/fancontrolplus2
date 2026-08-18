@@ -1,7 +1,7 @@
 <?xml version='1.0' standalone='yes'?>
 <!DOCTYPE PLUGIN [
 <!ENTITY name "fancontrolplus2">
-<!ENTITY version "2026.08.19e">
+<!ENTITY version "2026.08.19f">
 <!ENTITY author "techanonymous">
 <!ENTITY launch "Settings/FanControlPlus2">
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
@@ -22,6 +22,15 @@ This fork adds IPMI baseboard sensors and SAS/HBA controller temperature as
 extra per-fan temperature sources, and is renamed so it installs alongside the
 original. Fork changes are MIT licensed; see LICENSE and NOTICE in the repository.
 Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
+
+###2026.08.19f
+- **Fixed:** the Dashboard tile showed "--" instead of the temperature when the
+  original FanCtrl Plus is also installed. Both tiles render on the same Dashboard
+  and upstream declares setTempCell() and refreshSingleFan() as globals, so
+  whichever loaded last won and this tile called the other plugin's function.
+  RPM and Status were unaffected because they are set inline. The tile script is
+  now scoped in an IIFE, as the sibling Airflow tile already was.
+- Plugins page description no longer mentions the fork.
 
 ###2026.08.19e
 - Plugins page: the description is now a single short paragraph, matching the house
