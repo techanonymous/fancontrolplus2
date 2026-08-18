@@ -7,7 +7,7 @@
 <!ENTITY pluginURL "https://raw.githubusercontent.com/techanonymous/fancontrolplus2/main/unraid/&name;.plg">
 <!ENTITY source "/boot/config/plugins/&name;">
 <!ENTITY txz "/boot/config/plugins/fancontrolplus2/fancontrolplus2-&version;.txz">
-<!ENTITY MD5 "3e6bccfc74ca7f33b6ce8ed13b6cfa70">
+<!ENTITY MD5 "8a49de07c2b7b009aeb4e2433aae1b19">
 ]>
 
 <PLUGIN name="&name;" author="&author;" version="&version;" launch="&launch;" pluginURL="&pluginURL;" min="6.9.0" support="https://github.com/techanonymous/fancontrolplus2/issues">
