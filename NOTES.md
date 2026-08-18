@@ -7,12 +7,17 @@ Working journal for this fork. Not shipped to users; the user-facing docs are in
 
 ## Where things stand (2026-08-18)
 
-Two commits on `main`, **both local — nothing has been pushed to GitHub yet**:
+All work is **pushed to `origin/main`**. The repo is public at
+<https://github.com/techanonymous/fancontrolplus2>, MIT licensed (and detected as MIT
+by GitHub), with description and topics set.
 
 | Commit | What |
 |---|---|
 | `6e95703` | Rebrand fork as fancontrolplus2 |
 | `467e23a` | Add IPMI and SAS controller temperature sources |
+| `f8f7abf` | Add dev notes / working journal |
+| `535bbea` | Add MIT licence and rewrite project docs for the fork |
+| `ff1bcd0` | Keep LICENSE as verbatim MIT, move provenance to NOTICE |
 
 Nothing is installed on any server. The feature was tested on unraid99 with staged
 copies in `/tmp` and a fake PWM target, and every artifact was removed afterwards —
@@ -154,7 +159,9 @@ temps, drive the Commander Pro through hwmon as before.
 
 ## 4. Open decisions — for tomorrow
 
-1. **Push to `origin/main`?** Two commits waiting. Nothing has left the workstation.
+1. ~~Push to `origin/main`?~~ **Done** — pushed 2026-08-18. Note that LICENSE must stay
+   verbatim MIT or GitHub reclassifies the repo as "Other"; the provenance disclosure
+   lives in `NOTICE` for exactly that reason.
 2. **Version + release.** The `.plg` still carries upstream's `&version; 1.3.3` and
    upstream's `&MD5;`, while its `<URL>` now points at `techanonymous/fancontrolplus2`
    releases that don't exist — so `plugin install` cannot work yet. Needs a version
@@ -170,8 +177,10 @@ temps, drive the Commander Pro through hwmon as before.
 5. **Older storcli (SAS2/SAS3) path is unverified.** The `ROC temperature` fallback
    parse is two lines of awk, marked in the code. Relevant to unraid3, which has
    `lsiutil.plg` and an older controller. Untestable on cube.
-6. **Upstream has no LICENSE file.** No explicit grant for redistribution. Worth
-   raising with ck9393 before this goes anywhere public.
+6. **Upstream still has no LICENSE file.** The MIT grant in `LICENSE` is scoped to this
+   fork's changes only, with the position spelled out in `NOTICE`, which also offers to
+   change licensing or take the fork down at ck9393's request. Worth telling him the
+   fork exists rather than waiting for him to find it.
 7. **Donate links still point at ck9393** (correct — he's the original author), with
    `DonateText` reworded to say so. Change only if you'd rather drop them entirely.
 8. **CSS prefix sweep** (`fcp-` → something unique) — only needed if you ever want
