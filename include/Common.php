@@ -359,6 +359,11 @@ function detect_cpu_sensors(): array {
 
     $real = realpath($dev);
     if (!$real || in_array($real, $seen)) continue;
+
+    // 跳过 device-mapper 映射（加密盘的 LUKS 映射等）。它们是列表里已有物理盘的
+    // 第二个入口，而且 smartctl 对 /dev/dm-N 读不到温度：一旦被选中就会静默地
+    // 不提供任何温度，若是该风扇唯一的盘，风扇会掉到 Idle 转速。
+    if (preg_match('#^/dev/dm-\d+$#', $real)) continue;
     if (strpos($real, $boot_base) === 0) continue;
     $seen[] = $real;
 

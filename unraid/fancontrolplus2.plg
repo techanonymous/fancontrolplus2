@@ -26,6 +26,11 @@ Optional: IPMI Tools plugin (IPMI sensors), HBAviewer plugin (SAS temperature).
 ###2026.08.18a
 - Fixed: the Plugins page showed the entire project README as the plugin
   description. The package now ships a short blurb instead.
+- **Fixed:** encrypted drives appeared twice in Include Disk(s) — once as the real
+  device and once as their device-mapper (LUKS) mapping. smartctl cannot read a
+  temperature from /dev/dm-N, so selecting one silently contributed nothing, and a
+  fan with only such a disk would drop to Idle speed. The dm-* entries are now
+  filtered out.
 
 ###2026.08.18
 - First release of this fork.
