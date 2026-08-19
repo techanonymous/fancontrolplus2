@@ -1,9 +1,3 @@
-| Tier 2 | 2-segment piecewise curve, via `fcp2_scale`, all four sources | deferred |
-| — | Release | |
-| Tier 3 | Hysteresis + asymmetric slew + interval in seconds (10s floor) | **done** |
-| — | Release | **done — `2026.08.18c`** |
-| Loose ends | Chart live-crosshair for four sources; verify the older storcli path | next |
-| — | Release | |
 # Dev notes — FanControl Plus 2
 
 Working journal for this fork. Not shipped to users; the user-facing docs are in
@@ -11,33 +5,42 @@ Working journal for this fork. Not shipped to users; the user-facing docs are in
 
 ---
 
-## Where things stand (2026-08-18)
+## Where things stand (2026-08-19)
 
-**Released: `2026.08.18`** — the first installable build of this fork. Pushed to
-<https://github.com/techanonymous/fancontrolplus2>, MIT licensed, description and
-topics set. Run `git log --oneline` for the commit history.
+**Released and live.** Latest is `2026.08.19g`, installed and running on unraid99.
+Fifteen releases across two days — the tail of that list is a bug-fix train, see
+section 9. Everything is pushed; `git log v2026.08.19g..HEAD` is empty.
 
-### Agreed plan: ship in small increments, a release after each step
+Repo: <https://github.com/techanonymous/fancontrolplus2> — MIT licensed, described,
+topic-tagged, and no longer naming the upstream author anywhere user-facing (that
+attribution lives in `LICENSE`, `NOTICE` and the GitHub README).
 
-| Step | What | Status |
+### Running on unraid99
+
+Five fan configs, five control loops, plus `array_monitor` and the dashboard updater:
+
+| Config | Channel | Driven by |
 |---|---|---|
-| Tier 1 | Security hardening + correctness fixes (from the javi review) | **done — `2026.08.18`** |
-| Fixes | Plugin-page description, encrypted-drive duplicates | **done — `2026.08.18a`** |
-| Fixes | Settings menu position, source-arbitration note | **done — `2026.08.18b`** |
-| Tier 3 | Hysteresis + asymmetric slew + interval in seconds (10s floor) | **done — `2026.08.18c`** |
-| Tier 2 | 2-segment piecewise curve, via `fcp2_scale`, all four sources | **deferred** — see below |
-| Loose ends | Chart live-crosshair for four sources; verify the older storcli path | next |
+| `CPU_Radiator_Intake` | pwm6 | IPMI CPU Temp |
+| `Mobo_Rear_Exhaust` | pwm1 | IPMI |
+| `Addin_cards` | pwm4 | SAS controller |
+| `Drives_Mid` | pwm2 | Disk (10 disks) |
+| `Drives_Rear_Exhaust` | pwm3 | Disk (10 disks) |
 
-Rationale for the order: Tier 1 is pure downside-removal with no design decisions,
-so it ships first; the release after it makes the fork actually installable, which
-everything else then builds on.
+**The original FanCtrl Plus has been uninstalled**, so this is now the only fan
+controller on that box. Worth knowing: its removal script runs `pkill -f
+array_monitor.sh` *unqualified*, which matches ours too — it happened not to kill
+ours, but a future uninstall of anything sharing that script name could.
 
-Nothing is installed on any server. The feature was tested on unraid99 with staged
-copies in `/tmp` and a fake PWM target, and every artifact was removed afterwards —
-`/usr/local/emhttp/plugins/fancontrolplus2`, `/boot/config/plugins/fancontrolplus2`
-and `/var/tmp/fancontrolplus2` are all absent on that box.
+### Plan status
 
----
+| Step | Status |
+|---|---|
+| Tier 1 — security + correctness | **done** — `2026.08.18` |
+| Tier 3 — hysteresis, asymmetric slew, seconds interval | **done** — `2026.08.18c` |
+| Loose end — chart crosshair for four sources | **done** — `2026.08.19g` |
+| Tier 2 — 2-segment piecewise curve | **deferred**, see section 8 |
+| Loose end — older storcli (`ROC temperature`) path | **still unverified** |
 
 ## 1. The rename
 
@@ -58,9 +61,10 @@ cannot coexist — the second wins).
 - the `fcp-` / `fanctrl-` CSS class prefixes
 - the `Fanctrl*.php` / `Fcp*.php` include filenames
 
-Both are scoped to the plugin's own directory so they don't collide. The only
-exposure is cosmetic CSS bleed *if both plugins are installed at once* and their
-Dashboard tiles render on the same page. Deferred until that actually matters.
+Both are scoped to the plugin's own directory so they don't collide. The coexistence
+risk noted here **did** materialise, and not cosmetically: see section 9, the
+Dashboard `setTempCell` collision. Fixed by scoping the tile script, which is the
+right defence regardless of whether both plugins are installed.
 
 ---
 
@@ -82,9 +86,11 @@ Disk and CPU read hwmon/smartctl directly. IPMI and SAS cannot — they shell ou
 Every fan config runs its own loop process, so N fans ticking together would mean N
 calls at the same BMC/HBA. Hence [scripts/fcp2_sensor_sources.sh](scripts/fcp2_sensor_sources.sh):
 a shared cache in `/var/tmp/fancontrolplus2/`, refreshed under `flock`, with a
-re-check after acquiring the lock. TTLs (IPMI 20 s, SAS 30 s) are deliberately
-shorter than the 1-minute minimum interval, so a fan is never served a reading left
-over from its own previous cycle — the cache only coalesces *different* fans.
+re-check after acquiring the lock. **TTLs follow the fan's interval** (period/2,
+clamped to 3-20 s for IPMI and 4-30 s for SAS) so a fan is never served a reading
+left over from its own previous cycle — the cache only coalesces *different* fans.
+They were fixed at 20/30 s until Tier 3 introduced second-based intervals, which
+would have broken that guarantee below a 60 s period.
 
 `Common.php` reads the same cache through `bash -c source`, so the settings page
 does not poll independently: ~20 ms warm, ~450 ms cold.
@@ -348,3 +354,67 @@ directly. It is still worth doing for the "quiet below X, aggressive above X" sh
 it is no longer urgent. When it happens it belongs in `fcp2_scale`, so all four sources
 get it — javi's is disk-only — and the midpoint must default to the linear midpoint so
 existing configs are unchanged unless deliberately altered.
+
+---
+
+## 9. The 2026-08-19 bug-fix train, and what it should teach the next change
+
+Fifteen releases in two days. Tier 1 and Tier 3 were the planned work; almost
+everything after `2026.08.18` was fallout found by actually installing and using it.
+The pattern worth remembering is that **none of these were caught by linting, and
+several were invisible rather than loud**.
+
+### Failures that looked like success
+
+| Symptom | Cause |
+|---|---|
+| Plugins page said "up-to-date" forever | A bare `&` in the changelog made the `.plg` invalid XML, so `plugin("version")` returned `false` and `strcmp("", installed)` is negative. **Nothing in the UI hints at a parse failure.** |
+| Same again, nearly | `&mdash;` — XML predefines only `amp lt gt quot apos`; every other named entity must be in the DTD. Caught pre-publish by the entity audit. |
+| Settings page blank | The `.page` rename changed the route; stale browser tabs and bookmarks hit a name the dispatcher can't resolve, and Unraid renders the shell with no content and no error. |
+| Dashboard temperature column blank | Both plugins declared a global `setTempCell()`; the last script parsed won. RPM/Status kept working because they are set inline, which is what made it look like a data problem rather than a collision. |
+| Chart said "No runtime data yet" | Its parser accepted only `(CPU|Disk)` origins, so the `(IPMI)`/`(SAS)` values the daemon writes were discarded. |
+
+### The same constraint enforced in four places
+
+"Fan Speed on Idle" was capped at the Min speed by the browser's submit check, the
+save handler, the daemon, **and** a live keystroke handler. Removing three of them
+looked like a fix and changed nothing, because the fourth rewrote the field before
+the value ever reached them. When a constraint turns out to be enforced twice, assume
+it is enforced four times and go looking.
+
+### Windows checkouts are case-insensitive
+
+Writing the redirect shim as `fancontrolplus2.page` silently **overwrote**
+`FanControlPlus2.page` — same file on Windows — replacing the 1924-line settings page
+with a 25-line stub, which was then committed. The shim now lives at
+`unraid/legacy-route.page` and is renamed by the build. Any future file whose name
+differs from an existing one only by case must be handled the same way.
+
+### Build guards now in place
+
+The build refuses to produce a package unless all of these hold. Each exists because
+the corresponding thing actually shipped broken, or nearly did:
+
+- the `.plg` parses via Unraid's own `plugin()` helper **and** reports the expected version
+- no named entity in the `.plg` outside XML's five predefined ones and the DTD's own
+- `FanControlPlus2.page` is > 1000 lines, the shim < 60 (catches the case-collision clobber)
+- the shim carries no `Menu=` key (or it re-appears in Settings and undoes the sort fix)
+- every Dashboard tile script opens with an IIFE and closes it (no global leakage)
+- `stripUnit` handles the `s` suffix, and no stale minutes-era validation text remains
+- all four idle caps are absent
+- the packaged `README.md` is <= 4 lines and <= 400 bytes (it *is* the Plugins-page row)
+- `chart-handler.js` no longer hardcodes `(CPU|Disk)` origins
+- no CRLF in any shipped script, PHP or page
+
+### Release procedure reminder
+
+Ordering matters: bump `<!ENTITY version>` and add the `###<version>` CHANGES entry,
+build from `git archive HEAD`, take the md5 of the built file into `<!ENTITY MD5>`,
+then push and `gh release create v<version>` with the asset named
+`fancontrolplus2-<version>.txz`. The tag and asset name are both derived from the
+version entity — get either wrong and Unraid downloads a 404.
+
+`gh release create` does not work on this workstation (see the toolchain-gaps memory);
+use the REST API. And `raw.githubusercontent.com` caches for a few minutes, so a check
+straight after publishing can act on a stale `.plg` — clear `/tmp/plugins/<name>.plg`
+and re-run `plugin check` before concluding anything.
